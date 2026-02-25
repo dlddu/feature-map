@@ -1,0 +1,24 @@
+{
+  "description": "F4: 인수 테스트 생성 고정 응답",
+  "openai_response": {
+    "id": "chatcmpl-mock-f4-001",
+    "object": "chat.completion",
+    "created": 1700000004,
+    "model": "gpt-4o",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"acceptanceTests\":[{\"title\":\"Successful login with valid credentials\",\"givenClause\":\"A registered user with valid email and password\",\"whenClause\":\"The user submits the login form with correct credentials\",\"thenClause\":\"The user is redirected to the dashboard and session is created\"},{\"title\":\"Failed login with invalid credentials\",\"givenClause\":\"A user with an incorrect password\",\"whenClause\":\"The user submits the login form with wrong credentials\",\"thenClause\":\"An error message is displayed and no session is created\"}]}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 700,
+      "completion_tokens": 280,
+      "total_tokens": 980
+    }
+  }
+}

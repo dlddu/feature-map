@@ -1,0 +1,24 @@
+{
+  "description": "F5: 의존성 매핑 고정 응답",
+  "openai_response": {
+    "id": "chatcmpl-mock-f5-001",
+    "object": "chat.completion",
+    "created": 1700000005,
+    "model": "gpt-4o",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"dependencies\":[{\"layerId\":\"layer-business-001\",\"layerName\":\"Business Logic Layer\",\"description\":\"Authentication feature depends on session management in the business logic layer\",\"files\":[\"src/lib/session.ts\",\"src/lib/auth.ts\"]},{\"layerId\":\"layer-data-001\",\"layerName\":\"Data Access Layer\",\"description\":\"User data is persisted through the data access layer\",\"files\":[\"src/lib/db.ts\",\"prisma/schema.prisma\"]}]}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 650,
+      "completion_tokens": 220,
+      "total_tokens": 870
+    }
+  }
+}

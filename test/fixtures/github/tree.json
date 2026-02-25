@@ -1,0 +1,87 @@
+{
+  "sha": "abc123def456abc123def456abc123def456abc1",
+  "url": "https://api.github.com/repos/test-org/sample-app/git/trees/abc123def456abc123def456abc123def456abc1",
+  "tree": [
+    {
+      "path": "src",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "tree-sha-src"
+    },
+    {
+      "path": "src/app",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "tree-sha-app"
+    },
+    {
+      "path": "src/app/page.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob-sha-page",
+      "size": 512,
+      "url": "https://api.github.com/repos/test-org/sample-app/git/blobs/blob-sha-page"
+    },
+    {
+      "path": "src/app/layout.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob-sha-layout",
+      "size": 256,
+      "url": "https://api.github.com/repos/test-org/sample-app/git/blobs/blob-sha-layout"
+    },
+    {
+      "path": "src/components",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "tree-sha-components"
+    },
+    {
+      "path": "src/components/Button.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob-sha-button",
+      "size": 128,
+      "url": "https://api.github.com/repos/test-org/sample-app/git/blobs/blob-sha-button"
+    },
+    {
+      "path": "src/lib",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "tree-sha-lib"
+    },
+    {
+      "path": "src/lib/api.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob-sha-api",
+      "size": 1024,
+      "url": "https://api.github.com/repos/test-org/sample-app/git/blobs/blob-sha-api"
+    },
+    {
+      "path": "src/lib/auth.ts",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob-sha-auth",
+      "size": 768,
+      "url": "https://api.github.com/repos/test-org/sample-app/git/blobs/blob-sha-auth"
+    },
+    {
+      "path": "package.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob-sha-package",
+      "size": 2048,
+      "url": "https://api.github.com/repos/test-org/sample-app/git/blobs/blob-sha-package"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "blob-sha-readme",
+      "size": 4096,
+      "url": "https://api.github.com/repos/test-org/sample-app/git/blobs/blob-sha-readme"
+    }
+  ],
+  "truncated": false
+}

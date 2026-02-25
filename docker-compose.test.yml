@@ -1,0 +1,37 @@
+version: "3.9"
+
+# E2E 테스트용 Mock 서버 구성 (DLD-610)
+# - mock-github: GitHub App API 고정 응답 서버 (포트 3101)
+# - mock-llm: OpenAI/Anthropic 호환 LLM 고정 응답 + SSE 스트리밍 서버 (포트 3102)
+#
+# 사용법:
+#   docker compose -f docker-compose.test.yml up -d
+#   docker compose -f docker-compose.test.yml down
+services:
+  mock-github:
+    build:
+      context: .
+      dockerfile: test/mock-servers/github/Dockerfile
+    ports:
+      - "3101:3101"
+    environment:
+      PORT: "3101"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3101/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mock-llm:
+    build:
+      context: .
+      dockerfile: test/mock-servers/llm/Dockerfile
+    ports:
+      - "3102:3102"
+    environment:
+      PORT: "3102"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3102/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
