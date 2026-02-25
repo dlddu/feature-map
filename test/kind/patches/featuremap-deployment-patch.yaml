@@ -11,14 +11,27 @@ spec:
   replicas: 1
   template:
     spec:
-      securityContext:
-        fsGroup: 1001
       initContainers:
         - name: prisma-migrate
           image: featuremap-migrator:e2e
           imagePullPolicy: Never
-          securityContext:
-            runAsUser: 0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "=== Filesystem Permission Debug ==="
+              echo "--- Current User ---"
+              id
+              echo "--- /app ---"
+              ls -la /app
+              echo "--- /app/data ---"
+              ls -la /app/data 2>/dev/null || echo "/app/data does not exist"
+              echo "--- /app/prisma ---"
+              ls -la /app/prisma
+              echo "--- DATABASE_URL ---"
+              echo "$DATABASE_URL"
+              echo "=== Running prisma db push ==="
+              npx prisma db push --skip-generate
           envFrom:
             - configMapRef:
                 name: featuremap-e2e-env
