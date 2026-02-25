@@ -55,7 +55,7 @@ describe("Prisma Client Singleton", () => {
     it("should not attach to globalThis in production environment", () => {
       // Arrange
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = "production";
+      (process.env as Record<string, string>).NODE_ENV = "production";
 
       // Act
       const instance = getPrismaClient();
@@ -64,13 +64,13 @@ describe("Prisma Client Singleton", () => {
       expect(instance).toBeDefined();
 
       // Cleanup
-      process.env.NODE_ENV = originalEnv;
+      (process.env as Record<string, string>).NODE_ENV = originalEnv!;
     });
 
     it("should reuse cached instance in development to prevent multiple connections", () => {
       // Arrange
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = "development";
+      (process.env as Record<string, string>).NODE_ENV = "development";
 
       // Act
       const instance1 = getPrismaClient();
@@ -80,7 +80,7 @@ describe("Prisma Client Singleton", () => {
       expect(instance1).toBe(instance2);
 
       // Cleanup
-      process.env.NODE_ENV = originalEnv;
+      (process.env as Record<string, string>).NODE_ENV = originalEnv!;
     });
   });
 });

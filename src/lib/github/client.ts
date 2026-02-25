@@ -26,6 +26,9 @@ export async function getRepository(
   repo: string
 ) {
   const octokit = await getInstallationOctokit(installationId);
-  const { data } = await octokit.rest.repos.get({ owner, repo });
+  const { data } = await octokit.request("GET /repos/{owner}/{repo}", {
+    owner,
+    repo,
+  });
   return data;
 }
