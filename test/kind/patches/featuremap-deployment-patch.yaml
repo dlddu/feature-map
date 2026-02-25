@@ -1,60 +1,72 @@
 # KIND 환경 Deployment 패치 (DLD-610)
-# - 로컬 빌드 이미지 사용 (imagePullPolicy: Never)
-# - Mock 서버 URL 환경변수 주입
-# - 리소스 제한 설정 (KIND 클러스터 리소스 절약)
-# - probe 타이밍 조정
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: featuremap
-spec:
-  template:
-    spec:
-      initContainers:
-        - name: prisma-migrate
-          image: featuremap-migrator:e2e
-          imagePullPolicy: Never
-          command:
-            - /bin/sh
-            - -c
-            - |
-              echo "=== Filesystem Permission Debug ==="
-              echo "--- Current User ---"
-              id
-              echo "--- /app ---"
-              ls -la /app
-              echo "--- /app/data ---"
-              ls -la /app/data 2>/dev/null || echo "/app/data does not exist"
-              echo "--- /app/prisma ---"
-              ls -la /app/prisma
-              echo "--- DATABASE_URL ---"
-              echo "$DATABASE_URL"
-              echo "=== Running prisma db push ==="
-              npx prisma db push --skip-generate
-          envFrom:
-            - configMapRef:
-                name: featuremap-e2e-env
-            - secretRef:
-                name: featuremap-secrets
-      containers:
-        - name: featuremap
-          image: featuremap:e2e
-          imagePullPolicy: Never
-          envFrom:
-            - configMapRef:
-                name: featuremap-e2e-env
-            - secretRef:
-                name: featuremap-secrets
-          resources:
-            requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
-          livenessProbe:
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            initialDelaySeconds: 10
-            periodSeconds: 5
+# JSON 6902 방식: 변경되는 필드만 명시
+
+# --- initContainers[0]: prisma-migrate ---
+- op: replace
+  path: /spec/template/spec/initContainers/0/image
+  value: featuremap-migrator:e2e
+- op: add
+  path: /spec/template/spec/initContainers/0/imagePullPolicy
+  value: Never
+- op: replace
+  path: /spec/template/spec/initContainers/0/command
+  value:
+    - /bin/sh
+    - -c
+    - |
+      echo "=== Filesystem Permission Debug ==="
+      echo "--- Current User ---"
+      id
+      echo "--- /app ---"
+      ls -la /app
+      echo "--- /app/data ---"
+      ls -la /app/data 2>/dev/null || echo "/app/data does not exist"
+      echo "--- /app/prisma ---"
+      ls -la /app/prisma
+      echo "--- DATABASE_URL ---"
+      echo "$DATABASE_URL"
+      echo "=== Running prisma db push ==="
+      npx prisma db push --skip-generate
+- op: replace
+  path: /spec/template/spec/initContainers/0/envFrom
+  value:
+    - configMapRef:
+        name: featuremap-e2e-env
+    - secretRef:
+        name: featuremap-secrets
+
+# --- containers[0]: featuremap ---
+- op: replace
+  path: /spec/template/spec/containers/0/image
+  value: featuremap:e2e
+- op: add
+  path: /spec/template/spec/containers/0/imagePullPolicy
+  value: Never
+- op: replace
+  path: /spec/template/spec/containers/0/envFrom
+  value:
+    - configMapRef:
+        name: featuremap-e2e-env
+    - secretRef:
+        name: featuremap-secrets
+- op: add
+  path: /spec/template/spec/containers/0/resources
+  value:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+- op: replace
+  path: /spec/template/spec/containers/0/livenessProbe/initialDelaySeconds
+  value: 30
+- op: replace
+  path: /spec/template/spec/containers/0/livenessProbe/periodSeconds
+  value: 10
+- op: replace
+  path: /spec/template/spec/containers/0/readinessProbe/initialDelaySeconds
+  value: 10
+- op: replace
+  path: /spec/template/spec/containers/0/readinessProbe/periodSeconds
+  value: 5
