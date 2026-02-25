@@ -1,0 +1,41 @@
+{
+  "description": "F1: 레이어 추출 고정 응답",
+  "openai_response": {
+    "id": "chatcmpl-mock-f1-001",
+    "object": "chat.completion",
+    "created": 1700000001,
+    "model": "gpt-4o",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"layers\":[{\"name\":\"Presentation Layer\",\"description\":\"UI components and page rendering\",\"category\":\"frontend\",\"evidence\":[\"src/app/page.tsx\",\"src/components/Button.tsx\"],\"orderIndex\":0},{\"name\":\"Business Logic Layer\",\"description\":\"Core application logic and services\",\"category\":\"backend\",\"evidence\":[\"src/lib/api.ts\",\"src/lib/auth.ts\"],\"orderIndex\":1},{\"name\":\"Data Access Layer\",\"description\":\"Database interactions and persistence\",\"category\":\"data\",\"evidence\":[\"src/lib/db.ts\"],\"orderIndex\":2}]}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 500,
+      "completion_tokens": 200,
+      "total_tokens": 700
+    }
+  },
+  "anthropic_response": {
+    "id": "msg-mock-f1-001",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"layers\":[{\"name\":\"Presentation Layer\",\"description\":\"UI components and page rendering\",\"category\":\"frontend\",\"evidence\":[\"src/app/page.tsx\",\"src/components/Button.tsx\"],\"orderIndex\":0},{\"name\":\"Business Logic Layer\",\"description\":\"Core application logic and services\",\"category\":\"backend\",\"evidence\":[\"src/lib/api.ts\",\"src/lib/auth.ts\"],\"orderIndex\":1}]}"
+      }
+    ],
+    "model": "claude-opus-4-6",
+    "stop_reason": "end_turn",
+    "usage": {
+      "input_tokens": 500,
+      "output_tokens": 200
+    }
+  }
+}

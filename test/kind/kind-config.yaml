@@ -1,0 +1,29 @@
+# KIND 클러스터 설정 (DLD-610)
+# E2E 테스트용 단일 노드 KIND 클러스터
+# - 컨트롤 플레인 포트 포워딩: 3000 (featuremap), 3101 (mock-github), 3102 (mock-llm)
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: featuremap-e2e
+
+nodes:
+  - role: control-plane
+    # 호스트 포트 -> 컨테이너 포트 매핑
+    extraPortMappings:
+      - containerPort: 30000
+        hostPort: 3000
+        listenAddress: "127.0.0.1"
+        protocol: TCP
+      - containerPort: 30101
+        hostPort: 3101
+        listenAddress: "127.0.0.1"
+        protocol: TCP
+      - containerPort: 30102
+        hostPort: 3102
+        listenAddress: "127.0.0.1"
+        protocol: TCP
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"

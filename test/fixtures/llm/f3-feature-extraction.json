@@ -1,0 +1,24 @@
+{
+  "description": "F3: 기능 추출 고정 응답",
+  "openai_response": {
+    "id": "chatcmpl-mock-f3-001",
+    "object": "chat.completion",
+    "created": 1700000003,
+    "model": "gpt-4o",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"features\":[{\"name\":\"User Authentication\",\"description\":\"Allows users to log in and maintain sessions\",\"userStory\":\"As a user, I want to log in so that I can access protected resources\",\"category\":\"security\",\"entryPoints\":[\"src/lib/auth.ts\"],\"relatedFiles\":[\"src/app/login/page.tsx\",\"src/lib/session.ts\"]},{\"name\":\"Dashboard View\",\"description\":\"Main application dashboard showing key metrics\",\"userStory\":\"As a user, I want to see my dashboard so that I can get an overview of my data\",\"category\":\"core\",\"entryPoints\":[\"src/app/page.tsx\"],\"relatedFiles\":[\"src/components/MetricCard.tsx\"]}]}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 800,
+      "completion_tokens": 300,
+      "total_tokens": 1100
+    }
+  }
+}

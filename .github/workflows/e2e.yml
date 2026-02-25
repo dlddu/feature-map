@@ -1,0 +1,229 @@
+name: E2E Tests
+
+# DLD-610: e2e 테스트 환경 구성 (Playwright + Mock + KIND + CI)
+#
+# Job 구성:
+#   e2e-local: docker-compose로 Mock 서버 기동 + 로컬 Next.js 서버 + Playwright
+#   e2e-kind:  KIND 클러스터 + 이미지 로드 + kubectl apply -k 배포 + Playwright
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: docker-compose 기반 로컬 E2E
+  # ---------------------------------------------------------------------------
+  e2e-local:
+    name: E2E (docker-compose + local Next.js)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run database migrations
+        run: npx prisma db push
+        env:
+          DATABASE_URL: "file:./e2e-test.db"
+
+      - name: Build mock servers (docker-compose)
+        run: docker compose -f docker-compose.test.yml build
+
+      - name: Start mock servers
+        run: docker compose -f docker-compose.test.yml up -d
+
+      - name: Wait for mock servers to be healthy
+        run: |
+          echo "Waiting for mock-github..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3101/health; then
+              echo "mock-github is healthy"
+              break
+            fi
+            sleep 2
+          done
+
+          echo "Waiting for mock-llm..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3102/health; then
+              echo "mock-llm is healthy"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Start Next.js server
+        run: npm run build && npm run start &
+        env:
+          DATABASE_URL: "file:./e2e-test.db"
+          JWT_SECRET: "e2e-test-jwt-secret-local"
+          NEXTAUTH_URL: "http://localhost:3000"
+          NEXTAUTH_SECRET: "e2e-test-nextauth-secret"
+          GITHUB_APP_ID: "12345"
+          GITHUB_PRIVATE_KEY: "mock-private-key"
+          OPENAI_API_KEY: "mock-openai-key"
+          ANTHROPIC_API_KEY: "mock-anthropic-key"
+          GITHUB_API_URL: "http://localhost:3101"
+          OPENAI_BASE_URL: "http://localhost:3102/v1"
+          ANTHROPIC_BASE_URL: "http://localhost:3102"
+
+      - name: Wait for Next.js to be ready
+        run: |
+          echo "Waiting for Next.js server..."
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000; then
+              echo "Next.js server is ready"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Run Playwright E2E tests
+        run: npx playwright test
+        env:
+          E2E_BASE_URL: "http://localhost:3000"
+          MOCK_GITHUB_URL: "http://localhost:3101"
+          MOCK_LLM_URL: "http://localhost:3102"
+          DATABASE_URL: "file:./e2e-test.db"
+          JWT_SECRET: "e2e-test-jwt-secret-local"
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-local
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Stop mock servers
+        if: always()
+        run: docker compose -f docker-compose.test.yml down
+
+  # ---------------------------------------------------------------------------
+  # Job 2: KIND 클러스터 기반 E2E
+  # ---------------------------------------------------------------------------
+  e2e-kind:
+    name: E2E (KIND cluster)
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Install KIND
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-arm64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/kubectl
+
+      - name: Create KIND cluster
+        run: kind create cluster --config test/kind/kind-config.yaml --wait 60s
+
+      - name: Build Docker images
+        run: |
+          docker build --target runner -t featuremap:e2e .
+          docker build --target migrator -t featuremap-migrator:e2e .
+          docker build -f test/mock-servers/github/Dockerfile -t mock-github:e2e .
+          docker build -f test/mock-servers/llm/Dockerfile -t mock-llm:e2e .
+
+      - name: Load images into KIND cluster
+        run: |
+          kind load docker-image featuremap:e2e --name featuremap-e2e
+          kind load docker-image featuremap-migrator:e2e --name featuremap-e2e
+          kind load docker-image mock-github:e2e --name featuremap-e2e
+          kind load docker-image mock-llm:e2e --name featuremap-e2e
+
+      - name: Apply kustomize manifests
+        run: kubectl kustomize --load-restrictor LoadRestrictionsNone test/kind | kubectl apply -f -
+
+      - name: Wait for all pods to be ready
+        run: |
+          kubectl wait --namespace featuremap \
+            --for=condition=ready pod \
+            --selector=app=featuremap \
+            --timeout=180s
+
+          kubectl wait --namespace featuremap \
+            --for=condition=ready pod \
+            --selector=app=mock-github \
+            --timeout=60s
+
+          kubectl wait --namespace featuremap \
+            --for=condition=ready pod \
+            --selector=app=mock-llm \
+            --timeout=60s
+
+      - name: Run Playwright E2E tests
+        run: npx playwright test
+        env:
+          E2E_BASE_URL: "http://localhost:3000"
+          MOCK_GITHUB_URL: "http://localhost:3101"
+          MOCK_LLM_URL: "http://localhost:3102"
+          JWT_SECRET: "e2e-test-jwt-secret-kind-cluster"
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-kind
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Show pod status on failure
+        if: failure()
+        run: |
+          echo "=== Pod describe ==="
+          kubectl describe pod --namespace featuremap -l app=featuremap || true
+          echo "=== Namespace events ==="
+          kubectl get events --namespace featuremap --sort-by='.lastTimestamp' || true
+
+      - name: Show pod logs on failure
+        if: failure()
+        run: |
+          echo "=== Init container (prisma-migrate) logs ==="
+          kubectl logs --namespace featuremap \
+            -l app=featuremap -c prisma-migrate --tail=100 || true
+          echo "=== Main container (featuremap) logs ==="
+          kubectl logs --namespace featuremap \
+            -l app=featuremap -c featuremap --tail=100 || true
+          echo "=== mock-github logs ==="
+          kubectl logs --namespace featuremap \
+            -l app=mock-github --tail=50 || true
+          echo "=== mock-llm logs ==="
+          kubectl logs --namespace featuremap \
+            -l app=mock-llm --tail=50 || true

@@ -1,0 +1,26 @@
+{
+  "blob-sha-page": {
+    "content": "ZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gSG9tZSgpIHsKICByZXR1cm4gKAogICAgPG1haW4+CiAgICAgIDxoMT5TYW1wbGUgQXBwPC9oMT4KICAgIDwvbWFpbj4KICApOwp9Cg==",
+    "encoding": "base64",
+    "sha": "blob-sha-page",
+    "size": 512,
+    "url": "https://api.github.com/repos/test-org/sample-app/git/blobs/blob-sha-page",
+    "node_id": "B_kgDOBhXXXX"
+  },
+  "blob-sha-auth": {
+    "content": "ZXhwb3J0IGZ1bmN0aW9uIGF1dGhHdWFyZCgpIHsgcmV0dXJuIHRydWU7IH0K",
+    "encoding": "base64",
+    "sha": "blob-sha-auth",
+    "size": 768,
+    "url": "https://api.github.com/repos/test-org/sample-app/git/blobs/blob-sha-auth",
+    "node_id": "B_kgDOBhXXXY"
+  },
+  "blob-sha-api": {
+    "content": "ZXhwb3J0IGFzeW5jIGZ1bmN0aW9uIGZldGNoRGF0YSh1cmw6IHN0cmluZykgeyByZXR1cm4gZmV0Y2godXJsKTsgfQo=",
+    "encoding": "base64",
+    "sha": "blob-sha-api",
+    "size": 1024,
+    "url": "https://api.github.com/repos/test-org/sample-app/git/blobs/blob-sha-api",
+    "node_id": "B_kgDOBhXXXZ"
+  }
+}

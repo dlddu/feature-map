@@ -1,0 +1,24 @@
+{
+  "description": "F2: 전략 계획 고정 응답",
+  "openai_response": {
+    "id": "chatcmpl-mock-f2-001",
+    "object": "chat.completion",
+    "created": 1700000002,
+    "model": "gpt-4o",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"strategies\":[{\"name\":\"Authentication Feature Extraction\",\"description\":\"Extract authentication-related features from auth layer\",\"targetLayers\":[\"Business Logic Layer\"],\"searchPatterns\":[\"auth\",\"login\",\"session\",\"token\"],\"priority\":1},{\"name\":\"UI Component Mapping\",\"description\":\"Map UI components to user-facing features\",\"targetLayers\":[\"Presentation Layer\"],\"searchPatterns\":[\"Button\",\"Form\",\"Modal\",\"Page\"],\"priority\":2}]}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 600,
+      "completion_tokens": 250,
+      "total_tokens": 850
+    }
+  }
+}

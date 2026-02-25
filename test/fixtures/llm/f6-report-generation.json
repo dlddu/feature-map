@@ -1,0 +1,32 @@
+{
+  "description": "F6: 보고서 생성 고정 응답 (SSE 스트리밍 포함)",
+  "openai_response": {
+    "id": "chatcmpl-mock-f6-001",
+    "object": "chat.completion",
+    "created": 1700000006,
+    "model": "gpt-4o",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "# Feature Map Report\n\n## Executive Summary\n\nThis repository contains 2 main features across 3 architectural layers.\n\n## Features\n\n### 1. User Authentication\n- **Category**: Security\n- **User Story**: As a user, I want to log in so that I can access protected resources\n- **Entry Points**: `src/lib/auth.ts`\n\n### 2. Dashboard View\n- **Category**: Core\n- **User Story**: As a user, I want to see my dashboard\n- **Entry Points**: `src/app/page.tsx`\n\n## Architecture Layers\n\n1. Presentation Layer\n2. Business Logic Layer\n3. Data Access Layer\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 900,
+      "completion_tokens": 400,
+      "total_tokens": 1300
+    }
+  },
+  "sse_stream_chunks": [
+    "data: {\"id\":\"chatcmpl-mock-f6-001\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"index\":0}]}\n\n",
+    "data: {\"id\":\"chatcmpl-mock-f6-001\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"# Feature Map Report\\n\\n\"},\"index\":0}]}\n\n",
+    "data: {\"id\":\"chatcmpl-mock-f6-001\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"## Executive Summary\\n\\n\"},\"index\":0}]}\n\n",
+    "data: {\"id\":\"chatcmpl-mock-f6-001\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"This repository contains 2 main features.\"},\"index\":0}]}\n\n",
+    "data: {\"id\":\"chatcmpl-mock-f6-001\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\",\"index\":0}]}\n\n",
+    "data: [DONE]\n\n"
+  ]
+}

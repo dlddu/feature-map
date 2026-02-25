@@ -1,0 +1,9 @@
+# KIND 환경 Service 패치 (DLD-610)
+# ClusterIP -> NodePort 변경 + nodePort 할당
+# kind-config.yaml의 extraPortMappings와 포트가 일치해야 합니다.
+- op: replace
+  path: /spec/type
+  value: NodePort
+- op: add
+  path: /spec/ports/0/nodePort
+  value: 30000

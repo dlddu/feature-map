@@ -1,0 +1,46 @@
+# kustomization.yaml (DLD-610)
+# KIND E2E 테스트 환경 오버라이드
+# 실서빙 k8s/ 매니페스트 기반으로 테스트 전용 설정을 패치합니다.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: featuremap
+
+resources:
+  - ../../k8s/namespace.yaml
+  - ../../k8s/featuremap-deployment.yaml
+  - ../../k8s/featuremap-service.yaml
+  - ../../k8s/featuremap-pvc.yaml
+  - mocks/mock-github-deployment.yaml
+  - mocks/mock-github-service.yaml
+  - mocks/mock-llm-deployment.yaml
+  - mocks/mock-llm-service.yaml
+
+patches:
+  - path: patches/featuremap-deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: featuremap
+  - path: patches/featuremap-service-patch.yaml
+    target:
+      kind: Service
+      name: featuremap
+
+configMapGenerator:
+  - name: featuremap-e2e-env
+    literals:
+      - DATABASE_URL=file:./data/e2e-test.db
+      - NEXTAUTH_URL=http://localhost:3000
+      - GITHUB_API_URL=http://mock-github:3101
+      - OPENAI_BASE_URL=http://mock-llm:3102/v1
+      - ANTHROPIC_BASE_URL=http://mock-llm:3102
+
+secretGenerator:
+  - name: featuremap-secrets
+    literals:
+      - JWT_SECRET=e2e-test-jwt-secret-kind-cluster
+      - NEXTAUTH_SECRET=e2e-test-nextauth-secret
+      - GITHUB_APP_ID=12345
+      - GITHUB_PRIVATE_KEY=mock-private-key
+      - OPENAI_API_KEY=mock-openai-key
+      - ANTHROPIC_API_KEY=mock-anthropic-key

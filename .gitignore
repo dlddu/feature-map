@@ -7,6 +7,11 @@
 # testing
 /coverage
 
+# playwright
+/playwright-report/
+/test-results/
+/blob-report/
+
 # next.js
 /.next/
 /out/
@@ -37,6 +42,8 @@ next-env.d.ts
 # prisma
 prisma/dev.db
 prisma/dev.db-journal
+*.db
+*.db-journal
 
 # ide
 .idea/
