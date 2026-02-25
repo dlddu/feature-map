@@ -15,6 +15,17 @@ spec:
       labels:
         app: featuremap
     spec:
+      initContainers:
+        - name: prisma-migrate
+          image: featuremap-migrator:latest
+          command: ["npx", "prisma", "db", "push", "--skip-generate"]
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          envFrom:
+            - secretRef:
+                name: featuremap-secrets
+                optional: true
       containers:
         - name: featuremap
           image: featuremap:latest
