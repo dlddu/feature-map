@@ -7,10 +7,10 @@ kind: Kustomization
 namespace: featuremap
 
 resources:
-  - ../../k8s/namespace.yaml
-  - ../../k8s/featuremap-deployment.yaml
-  - ../../k8s/featuremap-service.yaml
-  - ../../k8s/featuremap-pvc.yaml
+  - base/namespace.yaml
+  - base/featuremap-deployment.yaml
+  - base/featuremap-service.yaml
+  - base/featuremap-pvc.yaml
   - mocks/mock-github-deployment.yaml
   - mocks/mock-github-service.yaml
   - mocks/mock-llm-deployment.yaml
