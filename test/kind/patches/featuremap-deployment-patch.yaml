@@ -1,14 +1,13 @@
 # KIND 환경 Deployment 패치 (DLD-610)
 # - 로컬 빌드 이미지 사용 (imagePullPolicy: Never)
 # - Mock 서버 URL 환경변수 주입
-# - 리소스 제한 완화 (KIND 클러스터 리소스 절약)
+# - 리소스 제한 설정 (KIND 클러스터 리소스 절약)
+# - probe 타이밍 조정
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: featuremap
-  namespace: featuremap
 spec:
-  replicas: 1
   template:
     spec:
       initContainers:
