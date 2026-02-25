@@ -1,15 +1,9 @@
 # KIND 환경 Service 패치 (DLD-610)
-# ClusterIP -> NodePort로 변경하여 호스트에서 직접 접근 가능하게 합니다.
+# ClusterIP -> NodePort 변경 + nodePort 할당
 # kind-config.yaml의 extraPortMappings와 포트가 일치해야 합니다.
-apiVersion: v1
-kind: Service
-metadata:
-  name: featuremap
-  namespace: featuremap
-spec:
-  type: NodePort
-  ports:
-    - port: 3000
-      targetPort: 3000
-      nodePort: 30000
-      protocol: TCP
+- op: replace
+  path: /spec/type
+  value: NodePort
+- op: add
+  path: /spec/ports/0/nodePort
+  value: 30000
