@@ -169,7 +169,7 @@ jobs:
           kind load docker-image mock-llm:e2e --name featuremap-e2e
 
       - name: Apply kustomize manifests
-        run: kubectl apply -k test/kind
+        run: kubectl kustomize --load-restrictor LoadRestrictionsNone test/kind | kubectl apply -f -
 
       - name: Wait for all pods to be ready
         run: |
