@@ -11,10 +11,14 @@ spec:
   replicas: 1
   template:
     spec:
+      securityContext:
+        fsGroup: 1001
       initContainers:
         - name: prisma-migrate
           image: featuremap-migrator:e2e
           imagePullPolicy: Never
+          securityContext:
+            runAsUser: 0
           envFrom:
             - configMapRef:
                 name: featuremap-e2e-env

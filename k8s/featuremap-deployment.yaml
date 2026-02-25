@@ -15,8 +15,6 @@ spec:
       labels:
         app: featuremap
     spec:
-      securityContext:
-        fsGroup: 1001
       initContainers:
         - name: prisma-migrate
           image: featuremap-migrator:latest
