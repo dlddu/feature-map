@@ -10,6 +10,14 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
+FROM node:22-alpine AS migrator
+WORKDIR /app
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
+COPY --from=deps /app/node_modules ./node_modules
+COPY prisma ./prisma
+USER nextjs
+CMD ["npx", "prisma", "db", "push", "--skip-generate"]
+
 FROM node:22-alpine AS runner
 ENV NODE_ENV=production
 WORKDIR /app
