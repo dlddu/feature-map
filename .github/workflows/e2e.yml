@@ -4,7 +4,7 @@ name: E2E Tests
 #
 # Job 구성:
 #   e2e-local: docker-compose로 Mock 서버 기동 + 로컬 Next.js 서버 + Playwright
-#   e2e-kind:  KIND 클러스터 + 이미지 로드 + kustomize 배포 + Playwright
+#   e2e-kind:  KIND 클러스터 + 이미지 로드 + kubectl apply -k 배포 + Playwright
 
 on:
   push:
@@ -120,8 +120,8 @@ jobs:
   # Job 2: KIND 클러스터 기반 E2E
   # ---------------------------------------------------------------------------
   e2e-kind:
-    name: E2E (KIND cluster + kustomize)
-    runs-on: ubuntu-24.04
+    name: E2E (KIND cluster)
+    runs-on: ubuntu-24.04-arm
 
     steps:
       - name: Checkout
@@ -141,20 +141,15 @@ jobs:
 
       - name: Install KIND
         run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-arm64
           chmod +x ./kind
           sudo mv ./kind /usr/local/bin/kind
 
       - name: Install kubectl
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/kubectl
-
-      - name: Install kustomize
-        run: |
-          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-          sudo mv kustomize /usr/local/bin/kustomize
 
       - name: Create KIND cluster
         run: kind create cluster --config test/kind/kind-config.yaml --wait 60s
@@ -174,8 +169,7 @@ jobs:
           kind load docker-image mock-llm:e2e --name featuremap-e2e
 
       - name: Apply kustomize manifests
-        run: |
-          kustomize build test/kind | kubectl apply -f -
+        run: kubectl apply -k test/kind
 
       - name: Wait for all pods to be ready
         run: |
@@ -219,7 +213,3 @@ jobs:
             -l app=mock-github --tail=50 || true
           kubectl logs --namespace featuremap \
             -l app=mock-llm --tail=50 || true
-
-      - name: Delete KIND cluster
-        if: always()
-        run: kind delete cluster --name featuremap-e2e
