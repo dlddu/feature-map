@@ -176,7 +176,7 @@ jobs:
           kubectl wait --namespace featuremap \
             --for=condition=ready pod \
             --selector=app=featuremap \
-            --timeout=120s
+            --timeout=180s
 
           kubectl wait --namespace featuremap \
             --for=condition=ready pod \
@@ -204,12 +204,26 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+      - name: Show pod status on failure
+        if: failure()
+        run: |
+          echo "=== Pod describe ==="
+          kubectl describe pod --namespace featuremap -l app=featuremap || true
+          echo "=== Namespace events ==="
+          kubectl get events --namespace featuremap --sort-by='.lastTimestamp' || true
+
       - name: Show pod logs on failure
         if: failure()
         run: |
+          echo "=== Init container (prisma-migrate) logs ==="
           kubectl logs --namespace featuremap \
-            -l app=featuremap --tail=100 || true
+            -l app=featuremap -c prisma-migrate --tail=100 || true
+          echo "=== Main container (featuremap) logs ==="
+          kubectl logs --namespace featuremap \
+            -l app=featuremap -c featuremap --tail=100 || true
+          echo "=== mock-github logs ==="
           kubectl logs --namespace featuremap \
             -l app=mock-github --tail=50 || true
+          echo "=== mock-llm logs ==="
           kubectl logs --namespace featuremap \
             -l app=mock-llm --tail=50 || true
