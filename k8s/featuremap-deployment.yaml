@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: featuremap
+  namespace: featuremap
+  labels:
+    app: featuremap
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: featuremap
+  template:
+    metadata:
+      labels:
+        app: featuremap
+    spec:
+      initContainers:
+        - name: prisma-migrate
+          image: featuremap-migrator:latest
+          command: ["npx", "prisma", "db", "push", "--skip-generate"]
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          envFrom:
+            - secretRef:
+                name: featuremap-secrets
+                optional: true
+      containers:
+        - name: featuremap
+          image: featuremap:latest
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          envFrom:
+            - secretRef:
+                name: featuremap-secrets
+                optional: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: featuremap-pvc
