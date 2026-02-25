@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  githubId     Int          @unique
+  login        String
+  name         String?
+  avatarUrl    String?
+  accessToken  String
+  refreshToken String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  repos        Repo[]
+  pipelineRuns PipelineRun[]
+  apiKeys      APIKey[]
+  llmConfigs   LLMConfig[]
+}
+
+model Repo {
+  id             String        @id @default(cuid())
+  githubRepoId   Int           @unique
+  fullName       String
+  defaultBranch  String
+  installationId Int
+  userId         String
+  cloneUrl       String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user           User          @relation(fields: [userId], references: [id])
+  pipelineRuns   PipelineRun[]
+}
+
+model PipelineRun {
+  id           String      @id @default(cuid())
+  repoId       String
+  userId       String
+  commitSha    String
+  status       String      @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  currentStep  String?
+  startedAt    DateTime    @default(now())
+  completedAt  DateTime?
+  errorMessage String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  repo         Repo        @relation(fields: [repoId], references: [id])
+  user         User        @relation(fields: [userId], references: [id])
+  layers       Layer[]
+  strategies   Strategy[]
+  features     Feature[]
+}
+
+model APIKey {
+  id           String   @id @default(cuid())
+  userId       String
+  provider     String
+  encryptedKey String
+  label        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model LLMConfig {
+  id          String   @id @default(cuid())
+  userId      String
+  featureType String
+  provider    String
+  model       String
+  temperature Float    @default(0.7)
+  maxTokens   Int      @default(4096)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Layer {
+  id            String      @id @default(cuid())
+  pipelineRunId String
+  name          String
+  description   String
+  category      String
+  evidence      String      // JSON serialized
+  orderIndex    Int
+  createdAt     DateTime    @default(now())
+
+  pipelineRun   PipelineRun @relation(fields: [pipelineRunId], references: [id])
+}
+
+model Strategy {
+  id             String      @id @default(cuid())
+  pipelineRunId  String
+  name           String
+  description    String
+  targetLayers   String      // JSON serialized
+  searchPatterns String      // JSON serialized
+  priority       Int
+  createdAt      DateTime    @default(now())
+
+  pipelineRun    PipelineRun @relation(fields: [pipelineRunId], references: [id])
+}
+
+model Feature {
+  id            String           @id @default(cuid())
+  pipelineRunId String
+  name          String
+  description   String
+  userStory     String?
+  category      String?
+  entryPoints   String           // JSON serialized
+  relatedFiles  String           // JSON serialized
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  pipelineRun   PipelineRun      @relation(fields: [pipelineRunId], references: [id])
+  acceptanceTests AcceptanceTest[]
+  dependencies  Dependency[]
+}
+
+model AcceptanceTest {
+  id          String   @id @default(cuid())
+  featureId   String
+  title       String
+  givenClause String
+  whenClause  String
+  thenClause  String
+  status      String   @default("DRAFT") // DRAFT, REVIEWED, APPROVED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  feature     Feature  @relation(fields: [featureId], references: [id])
+}
+
+model Dependency {
+  id          String   @id @default(cuid())
+  featureId   String
+  layerId     String
+  layerName   String
+  description String
+  files       String   // JSON serialized
+  createdAt   DateTime @default(now())
+
+  feature     Feature  @relation(fields: [featureId], references: [id])
+}
