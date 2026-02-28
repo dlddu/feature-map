@@ -6,6 +6,8 @@ import { defineConfig, devices } from "@playwright/test";
  * - 모바일 뷰포트 에뮬레이션 포함
  */
 export default defineConfig({
+  globalSetup: "./test/e2e/global-setup.ts",
+  globalTeardown: "./test/e2e/global-teardown.ts",
   testDir: "./test/e2e",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
