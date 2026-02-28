@@ -188,6 +188,38 @@ jobs:
             --selector=app=mock-llm \
             --timeout=60s
 
+      - name: Verify DB file and port-forward status
+        run: |
+          echo "=== featuremap pod DB file check ==="
+          FEATUREMAP_POD=$(kubectl get pod --namespace featuremap -l app=featuremap -o jsonpath='{.items[0].metadata.name}')
+          echo "Pod name: $FEATUREMAP_POD"
+          kubectl exec --namespace featuremap "$FEATUREMAP_POD" -c featuremap -- ls -la /app/data/ || echo "WARN: /app/data/ not accessible"
+          kubectl exec --namespace featuremap "$FEATUREMAP_POD" -c featuremap -- cat /app/data/e2e-test.db > /dev/null 2>&1 && echo "DB file readable" || echo "WARN: DB file NOT readable"
+          echo "=== DATABASE_URL inside pod ==="
+          kubectl exec --namespace featuremap "$FEATUREMAP_POD" -c featuremap -- printenv DATABASE_URL || echo "DATABASE_URL not set"
+          echo "=== CWD inside pod ==="
+          kubectl exec --namespace featuremap "$FEATUREMAP_POD" -c featuremap -- pwd || true
+          echo "=== Connectivity check (curl localhost:3000/signup) ==="
+          curl -sf -o /dev/null -w "HTTP %{http_code}" http://localhost:3000/signup || echo "WARN: /signup not reachable"
+          echo ""
+          echo "=== Connectivity check (curl localhost:3000/api/auth/register) ==="
+          curl -sf -o /dev/null -w "HTTP %{http_code}" -X POST -H "Content-Type: application/json" -d '{"email":"debug-probe@test.com","password":"TestPass123!"}' http://localhost:3000/api/auth/register || echo "WARN: /api/auth/register returned error"
+
+      - name: Seed test data via API
+        run: |
+          echo "Seeding existing-user@example.com for duplicate email test..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:3000/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"email":"existing-user@example.com","password":"Password123!"}')
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          echo "Seed response: HTTP $HTTP_CODE, body=$BODY"
+          if [ "$HTTP_CODE" = "201" ]; then
+            echo "Seed user created successfully"
+          else
+            echo "WARN: Seed user creation returned HTTP $HTTP_CODE"
+          fi
+
       - name: Run Playwright E2E tests
         run: npx playwright test
         env:
@@ -220,10 +252,26 @@ jobs:
             -l app=featuremap -c prisma-migrate --tail=100 || true
           echo "=== Main container (featuremap) logs ==="
           kubectl logs --namespace featuremap \
-            -l app=featuremap -c featuremap --tail=100 || true
+            -l app=featuremap -c featuremap --tail=200 || true
           echo "=== mock-github logs ==="
           kubectl logs --namespace featuremap \
             -l app=mock-github --tail=50 || true
           echo "=== mock-llm logs ==="
           kubectl logs --namespace featuremap \
             -l app=mock-llm --tail=50 || true
+
+      - name: Check DB file state on failure
+        if: failure()
+        run: |
+          FEATUREMAP_POD=$(kubectl get pod --namespace featuremap -l app=featuremap -o jsonpath='{.items[0].metadata.name}')
+          echo "=== DB file details ==="
+          kubectl exec --namespace featuremap "$FEATUREMAP_POD" -c featuremap -- ls -la /app/data/ 2>&1 || echo "Cannot list /app/data/"
+          kubectl exec --namespace featuremap "$FEATUREMAP_POD" -c featuremap -- ls -la /app/ 2>&1 || echo "Cannot list /app/"
+          echo "=== Check SQLite DB with file command ==="
+          kubectl exec --namespace featuremap "$FEATUREMAP_POD" -c featuremap -- file /app/data/e2e-test.db 2>&1 || echo "file command failed"
+          echo "=== DATABASE_URL and working directory ==="
+          kubectl exec --namespace featuremap "$FEATUREMAP_POD" -c featuremap -- printenv DATABASE_URL 2>&1 || echo "DATABASE_URL not set"
+          kubectl exec --namespace featuremap "$FEATUREMAP_POD" -c featuremap -- pwd 2>&1 || true
+          echo "=== Volume mounts ==="
+          kubectl get pod --namespace featuremap "$FEATUREMAP_POD" -o jsonpath='{.spec.containers[0].volumeMounts}' || true
+          echo ""

@@ -22,16 +22,20 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
+      console.log("[signup] Submitting registration:", { email });
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
+      console.log("[signup] Response status:", response.status);
       const data = await response.json();
+      console.log("[signup] Response body:", JSON.stringify(data));
 
       if (!response.ok) {
         const errorMessage: string = data.error ?? "회원가입에 실패했습니다";
+        console.log("[signup] Error message:", errorMessage, "Status:", response.status);
 
         if (response.status === 409) {
           setErrors({ email: errorMessage });
@@ -53,8 +57,10 @@ export default function SignupPage() {
         return;
       }
 
+      console.log("[signup] Success, redirecting to /dashboard");
       router.push("/dashboard");
-    } catch {
+    } catch (err) {
+      console.error("[signup] Network/fetch error:", err);
       setErrors({ general: "네트워크 오류가 발생했습니다" });
     } finally {
       setIsLoading(false);

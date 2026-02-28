@@ -1,10 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { existsSync } from "fs";
+import { resolve } from "path";
 import bcrypt from "bcrypt";
 import { prisma } from "@/lib/db/client";
 import { generateAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BCRYPT_SALT_ROUNDS = 10;
+
+function logDbDebugInfo() {
+  const cwd = process.cwd();
+  const dbUrl = process.env.DATABASE_URL ?? "(not set)";
+  console.log(`[register] DATABASE_URL=${dbUrl}, CWD=${cwd}`);
+  // SQLite 파일 경로 추출 후 존재 여부 확인
+  const match = dbUrl.match(/file:\.?\/?(.+)/);
+  if (match) {
+    const dbPath = resolve(cwd, match[1]);
+    console.log(`[register] Resolved DB path: ${dbPath}, exists: ${existsSync(dbPath)}`);
+  }
+}
 
 function validateEmail(email: string): string | null {
   if (!email || email.trim() === "") {
@@ -36,6 +50,8 @@ function validatePassword(password: string): string | null {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  logDbDebugInfo();
+
   // Body 파싱
   let body: Record<string, unknown>;
   try {
@@ -83,10 +99,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   // 이메일 중복 확인
-  const existingUser = await prisma.user.findUnique({
-    where: { email },
-  });
+  let existingUser;
+  try {
+    existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+  } catch (err) {
+    console.error("[register] DB error during findUnique:", err);
+    return NextResponse.json(
+      { error: "서버 내부 오류가 발생했습니다 (DB 접근 실패)" },
+      { status: 500 }
+    );
+  }
   if (existingUser) {
+    console.log(`[register] Duplicate email detected: ${email}`);
     return NextResponse.json(
       { error: "이미 사용 중인 이메일입니다" },
       { status: 409 }
@@ -97,13 +123,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
   // 유저 생성
-  const user = await prisma.user.create({
-    data: {
-      email,
-      passwordHash,
-      ...(name !== undefined ? { name } : {}),
-    },
-  });
+  let user;
+  try {
+    user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        ...(name !== undefined ? { name } : {}),
+      },
+    });
+    console.log(`[register] User created: id=${user.id}, email=${user.email}`);
+  } catch (err) {
+    console.error("[register] DB error during user.create:", err);
+    return NextResponse.json(
+      { error: "서버 내부 오류가 발생했습니다 (유저 생성 실패)" },
+      { status: 500 }
+    );
+  }
 
   // 토큰 발급
   const accessToken = generateAccessToken(user.id);
@@ -128,5 +164,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     `refresh_token=${refreshToken}; HttpOnly; Path=/; SameSite=Lax`
   );
 
+  console.log(`[register] Signup success for ${email}, responding 201`);
   return response;
 }

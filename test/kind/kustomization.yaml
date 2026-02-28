@@ -29,7 +29,7 @@ patches:
 configMapGenerator:
   - name: featuremap-e2e-env
     literals:
-      - DATABASE_URL=file:./data/e2e-test.db
+      - DATABASE_URL=file:/app/data/e2e-test.db
       - NEXTAUTH_URL=http://localhost:3000
       - GITHUB_API_URL=http://mock-github:3101
       - OPENAI_BASE_URL=http://mock-llm:3102/v1
