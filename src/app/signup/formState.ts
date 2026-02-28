@@ -72,7 +72,7 @@ export function parseRegisterError(
 
   if (status === 422) {
     return {
-      passwordError: body.error || "비밀번호가 정책을 위반합니다.",
+      passwordError: body.error || "비밀번호는 8자 이상이어야 합니다.",
     };
   }
 

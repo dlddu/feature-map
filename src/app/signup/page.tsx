@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   buildRegisterPayload,
@@ -20,6 +20,14 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formState, setFormState] = useState<SignupFormState>(INITIAL_STATE);
+
+  // 회원가입 성공 후 대시보드로 리다이렉트
+  // useEffect를 통해 React 렌더링 사이클 완료 후 안정적으로 네비게이션 수행
+  useEffect(() => {
+    if (formState.status === "success") {
+      router.push("/dashboard");
+    }
+  }, [formState.status, router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -47,7 +55,6 @@ export default function SignupPage() {
           passwordError: null,
           generalError: null,
         });
-        router.push("/dashboard");
         return;
       }
 
