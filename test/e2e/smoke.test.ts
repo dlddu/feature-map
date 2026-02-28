@@ -6,15 +6,13 @@
  * - JWT 인증 상태에서 기본 화면 접근
  * - 모바일 뷰포트에서 정상 렌더링
  *
- * TODO: DLD-610 구현 완료 후 skip 제거
  * 실행: npx playwright test test/e2e/smoke.test.ts
  */
 
 import { test, expect } from "@playwright/test";
 import { createAuthCookies, createDefaultTestTokens } from "../helpers/auth";
 
-// TODO: DLD-610 구현 완료 후 아래 test.describe.skip을 test.describe로 교체
-test.describe.skip("Smoke Test: FeatureMap 전체 파이프라인", () => {
+test.describe("Smoke Test: FeatureMap 전체 파이프라인", () => {
   // ---------------------------------------------------------------------------
   // Happy Path: 앱 기동 및 기본 렌더링
   // ---------------------------------------------------------------------------
