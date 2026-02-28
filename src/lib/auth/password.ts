@@ -54,5 +54,9 @@ export async function comparePassword(
   plainPassword: string,
   hash: string
 ): Promise<boolean> {
+  // bcrypt 해시는 $2a$ 또는 $2b$ 접두사로 시작해야 한다
+  if (!hash.match(/^\$2[ab]\$/)) {
+    throw new Error("Invalid hash format: not a valid bcrypt hash");
+  }
   return bcrypt.compare(plainPassword, hash);
 }

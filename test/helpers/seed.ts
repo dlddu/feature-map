@@ -105,8 +105,8 @@ export async function seedDatabase(): Promise<SeedResult> {
   return {
     user: {
       id: user.id,
-      githubId: user.githubId,
-      login: user.login,
+      githubId: user.githubId ?? 9000001,
+      login: user.login ?? "test-user",
       name: user.name ?? "E2E Test User",
     },
     repo: {
