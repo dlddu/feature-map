@@ -1,19 +1,34 @@
 /**
- * 회원가입 E2E 테스트 (DLD-611)
+ * 회원가입 E2E 테스트 (DLD-612)
  *
  * 이메일/비밀번호 기반 회원가입 플로우를 검증하는 E2E 테스트입니다.
  * - 정상 회원가입 후 대시보드 리다이렉트
  * - 이미 등록된 이메일로 가입 시도 시 에러 메시지 표시
  * - 비밀번호 정책 미충족(8자 미만) 시 에러 메시지 표시
  *
- * TODO: DLD-611 구현 완료 후 skip 제거
  * 실행: npx playwright test test/e2e/auth.test.ts
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, request as apiRequest } from "@playwright/test";
 
-// TODO: DLD-611 구현 완료 후 아래 test.describe.skip을 test.describe로 교체
-test.describe.skip("회원가입: 이메일/비밀번호 기반 회원가입 플로우", () => {
+const EXISTING_EMAIL = "existing-user@example.com";
+const EXISTING_PASSWORD = "Password123!";
+
+test.describe("회원가입: 이메일/비밀번호 기반 회원가입 플로우", () => {
+  // ---------------------------------------------------------------------------
+  // 사전 조건: 중복 이메일 테스트에 필요한 기존 유저를 API로 등록
+  // ---------------------------------------------------------------------------
+
+  test.beforeAll(async ({ baseURL }) => {
+    // existing-user@example.com 계정이 DB에 존재하도록 사전 등록
+    // 이미 존재하는 경우(409)는 무시한다
+    const context = await apiRequest.newContext({ baseURL });
+    await context.post("/api/auth/register", {
+      data: { email: EXISTING_EMAIL, password: EXISTING_PASSWORD },
+    });
+    await context.dispose();
+  });
+
   // ---------------------------------------------------------------------------
   // Happy Path: 정상 회원가입 후 대시보드 리다이렉트
   // ---------------------------------------------------------------------------
@@ -42,8 +57,8 @@ test.describe.skip("회원가입: 이메일/비밀번호 기반 회원가입 플
   test("이미 등록된 이메일로 회원가입 시도하면 에러 메시지가 표시된다", async ({
     page,
   }) => {
-    // Arrange: 이미 등록된 이메일 (사전에 가입된 계정)
-    const existingEmail = "existing-user@example.com";
+    // Arrange: beforeAll에서 사전 등록된 이메일 사용
+    const existingEmail = EXISTING_EMAIL;
     const password = "Password123!";
 
     // Act: 회원가입 페이지 진입 후 중복 이메일로 폼 제출

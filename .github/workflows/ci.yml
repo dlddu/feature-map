@@ -26,6 +26,9 @@ jobs:
 
       - name: Run tests
         run: npm test
+        env:
+          DATABASE_URL: "file:./dev.db"
+          JWT_SECRET: "ci-test-secret-key-for-jest"
 
       - name: Build
         run: npm run build
