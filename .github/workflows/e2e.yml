@@ -205,6 +205,21 @@ jobs:
           echo "=== Connectivity check (curl localhost:3000/api/auth/register) ==="
           curl -sf -o /dev/null -w "HTTP %{http_code}" -X POST -H "Content-Type: application/json" -d '{"email":"debug-probe@test.com","password":"TestPass123!"}' http://localhost:3000/api/auth/register || echo "WARN: /api/auth/register returned error"
 
+      - name: Seed test data via API
+        run: |
+          echo "Seeding existing-user@example.com for duplicate email test..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:3000/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"email":"existing-user@example.com","password":"Password123!"}')
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          echo "Seed response: HTTP $HTTP_CODE, body=$BODY"
+          if [ "$HTTP_CODE" = "201" ]; then
+            echo "Seed user created successfully"
+          else
+            echo "WARN: Seed user creation returned HTTP $HTTP_CODE"
+          fi
+
       - name: Run Playwright E2E tests
         run: npx playwright test
         env:
