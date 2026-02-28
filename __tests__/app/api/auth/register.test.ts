@@ -67,11 +67,11 @@ import { generateAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
 // 타입 헬퍼
 // ---------------------------------------------------------------------------
 
-const mockPrismaUser = prisma.user as {
+const mockPrismaUser = prisma.user as unknown as {
   findUnique: jest.Mock;
   create: jest.Mock;
 };
-const mockBcrypt = bcrypt as { hash: jest.Mock; compare: jest.Mock };
+const mockBcrypt = bcrypt as unknown as { hash: jest.Mock; compare: jest.Mock };
 const mockGenerateAccessToken = generateAccessToken as jest.Mock;
 const mockGenerateRefreshToken = generateRefreshToken as jest.Mock;
 
