@@ -8,7 +8,11 @@
 import { seedDatabase, clearDatabase } from "../helpers/seed";
 
 async function globalSetup() {
-  await clearDatabase();
+  try {
+    await clearDatabase();
+  } catch {
+    // DB 테이블이 아직 없는 경우(새 DB) — 무시하고 시딩 진행
+  }
   await seedDatabase();
 }
 
