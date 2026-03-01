@@ -166,12 +166,35 @@ describe("POST /api/auth/register", () => {
 
       // Act
       const response = await POST(request);
-      const setCookie = response.headers.get("set-cookie");
+      const setCookieHeaders = response.headers.getSetCookie
+        ? response.headers.getSetCookie()
+        : [response.headers.get("set-cookie") ?? ""];
+      const allCookies = setCookieHeaders.join(", ");
 
       // Assert
-      expect(setCookie).not.toBeNull();
-      expect(setCookie).toContain(MOCK_REFRESH_TOKEN);
-      expect(setCookie?.toLowerCase()).toContain("httponly");
+      expect(allCookies).not.toBe("");
+      expect(allCookies).toContain(MOCK_REFRESH_TOKEN);
+      expect(allCookies.toLowerCase()).toContain("httponly");
+    });
+
+    it("accessToken이 httpOnly 쿠키로 Set-Cookie 헤더에 설정된다", async () => {
+      // Arrange
+      const request = makeRequest({
+        email: VALID_EMAIL,
+        password: VALID_PASSWORD,
+      });
+
+      // Act
+      const response = await POST(request);
+      const setCookieHeaders = response.headers.getSetCookie
+        ? response.headers.getSetCookie()
+        : [response.headers.get("set-cookie") ?? ""];
+      const allCookies = setCookieHeaders.join(", ");
+
+      // Assert
+      expect(allCookies).not.toBe("");
+      expect(allCookies).toContain(MOCK_ACCESS_TOKEN);
+      expect(allCookies.toLowerCase()).toContain("httponly");
     });
 
     it("생성된 유저 정보(id, email)가 응답 body에 포함된다", async () => {

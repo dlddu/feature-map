@@ -122,8 +122,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     { status: 201 }
   );
 
-  // refreshToken을 httpOnly 쿠키로 설정
-  response.headers.set(
+  // 쿠키 설정 (두 개의 HttpOnly 쿠키)
+  response.headers.append(
+    "Set-Cookie",
+    `access_token=${accessToken}; HttpOnly; Path=/; SameSite=Lax`
+  );
+  response.headers.append(
     "Set-Cookie",
     `refresh_token=${refreshToken}; HttpOnly; Path=/; SameSite=Lax`
   );
