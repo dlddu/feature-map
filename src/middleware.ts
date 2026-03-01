@@ -66,8 +66,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
       const newAccessToken = generateAccessToken(payload.userId);
 
-      // 새 access_token 설정 후 통과
-      const response = NextResponse.next();
+      // 새 access_token을 쿠키에 설정하고 동일 URL로 리다이렉트
+      // redirect 응답의 Set-Cookie는 브라우저가 반드시 처리하므로
+      // NextResponse.next()보다 쿠키 전파가 확실함
+      const response = NextResponse.redirect(new URL(request.url));
       response.cookies.set("access_token", newAccessToken, {
         path: "/",
         sameSite: "lax",

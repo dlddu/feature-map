@@ -240,7 +240,7 @@ describe("middleware", () => {
       expect(mockGenerateAccessToken).toHaveBeenCalledWith(MOCK_USER_ID);
     });
 
-    it("refresh 성공 시 새 access_token을 응답 쿠키에 설정하고 통과한다", async () => {
+    it("refresh 성공 시 새 access_token을 쿠키에 설정하고 동일 URL로 리다이렉트한다", async () => {
       // Arrange
       const MOCK_REFRESH_PAYLOAD = {
         userId: MOCK_USER_ID,
@@ -261,8 +261,8 @@ describe("middleware", () => {
       // Act
       const response = await middleware(request);
 
-      // Assert
-      expect(mockNextResponseNext).toHaveBeenCalled();
+      // Assert: 동일 URL로 리다이렉트하며 새 access_token 쿠키가 설정됨
+      expect(mockNextResponseRedirect).toHaveBeenCalled();
       const setCookie = response?.headers.get("set-cookie");
       expect(setCookie).toContain(MOCK_NEW_ACCESS_TOKEN);
     });
