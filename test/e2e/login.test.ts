@@ -90,15 +90,18 @@ test.describe("로그인: GitHub OAuth 로그인 플로우", () => {
     //          실제 GitHub 인증 없이 인증 완료 상태를 시뮬레이션
     await page.route("/api/auth/github/callback*", async (route) => {
       // OAuth 콜백 성공 시 쿠키 설정 후 대시보드로 리다이렉트하는 응답 mock
+      // Playwright route.fulfill()이 Mobile Safari에서 302를 지원하지 않으므로
+      // 200 + meta refresh로 리다이렉트를 시뮬레이션
       await route.fulfill({
-        status: 302,
+        status: 200,
         headers: {
-          Location: "/dashboard",
+          "Content-Type": "text/html",
           "Set-Cookie": [
             `access_token=mock-access-token; Path=/; HttpOnly`,
             `refresh_token=mock-refresh-token; Path=/; HttpOnly`,
           ].join(", "),
         },
+        body: '<html><head><meta http-equiv="refresh" content="0;url=/dashboard"></head><body></body></html>',
       });
     });
 

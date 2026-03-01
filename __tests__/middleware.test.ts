@@ -1,20 +1,19 @@
 /**
- * src/middleware.ts — Unit Tests (TDD Red Phase)
+ * src/middleware.ts — Unit Tests
  *
  * 테스트 대상: src/middleware.ts
  *
  * Mock 전략:
- *  - @/lib/auth/jwt   → verifyToken을 mock으로 대체
- *  - next/server      → NextResponse를 spy하여 next() / redirect() 호출 검증
- *  - global.fetch     → /api/auth/refresh 내부 호출을 mock으로 시뮬레이션
+ *  - @/lib/auth/jwt-edge → verifyTokenEdge, generateAccessTokenEdge를 mock으로 대체
+ *  - next/server         → NextResponse를 spy하여 next() / redirect() 호출 검증
  *
  * 동작 요약:
- *  - 보호 경로(/dashboard/*)에 대해 쿠키의 access_token을 verifyToken으로 검증
+ *  - 보호 경로(/dashboard/*)에 대해 쿠키의 access_token을 verifyTokenEdge로 검증
  *  - 유효한 토큰 → NextResponse.next() 통과
  *  - 토큰 없음 → /login 리다이렉트
- *  - 만료/무효 토큰 → refresh_token 쿠키로 /api/auth/refresh 호출
- *    - refresh 성공 → 새 access_token 설정 후 통과
- *    - refresh 실패 → /login 리다이렉트
+ *  - 만료/무효 토큰 → refresh_token 쿠키를 직접 verifyTokenEdge로 검증
+ *    - refresh 성공 → generateAccessTokenEdge로 새 access_token 설정 후 리다이렉트
+ *    - refresh 실패 → 통과 (API가 인증 처리)
  *  - 공개 경로(/login, /signup, /api/auth/*)는 미들웨어 적용 제외
  */
 
@@ -24,11 +23,10 @@ import { NextRequest, NextResponse } from "next/server";
 // Mocks
 // ---------------------------------------------------------------------------
 
-jest.mock("@/lib/auth/jwt", () => ({
+jest.mock("@/lib/auth/jwt-edge", () => ({
   __esModule: true,
-  generateAccessToken: jest.fn(),
-  generateRefreshToken: jest.fn(),
-  verifyToken: jest.fn(),
+  verifyTokenEdge: jest.fn(),
+  generateAccessTokenEdge: jest.fn(),
 }));
 
 // NextResponse를 spy할 수 있도록 next/server를 부분 mock
@@ -59,13 +57,17 @@ jest.mock("next/server", () => {
 // ---------------------------------------------------------------------------
 
 import { middleware } from "@/middleware";
-import { verifyToken } from "@/lib/auth/jwt";
+import {
+  verifyTokenEdge,
+  generateAccessTokenEdge,
+} from "@/lib/auth/jwt-edge";
 
 // ---------------------------------------------------------------------------
 // 타입 헬퍼
 // ---------------------------------------------------------------------------
 
-const mockVerifyToken = verifyToken as jest.Mock;
+const mockVerifyTokenEdge = verifyTokenEdge as jest.Mock;
+const mockGenerateAccessTokenEdge = generateAccessTokenEdge as jest.Mock;
 
 // ---------------------------------------------------------------------------
 // 테스트 픽스처
@@ -121,8 +123,8 @@ describe("middleware", () => {
   beforeEach(() => {
     mockNextResponseNext.mockClear();
     mockNextResponseRedirect.mockClear();
-    mockVerifyToken.mockReturnValue(MOCK_TOKEN_PAYLOAD);
-    global.fetch = jest.fn();
+    mockVerifyTokenEdge.mockResolvedValue(MOCK_TOKEN_PAYLOAD);
+    mockGenerateAccessTokenEdge.mockResolvedValue(MOCK_NEW_ACCESS_TOKEN);
   });
 
   afterEach(() => {
@@ -162,7 +164,7 @@ describe("middleware", () => {
       expect(mockNextResponseRedirect).not.toHaveBeenCalled();
     });
 
-    it("verifyToken이 쿠키의 access_token 값으로 호출된다", async () => {
+    it("verifyTokenEdge가 쿠키의 access_token 값으로 호출된다", async () => {
       // Arrange
       const request = makeRequest("/dashboard", {
         accessToken: MOCK_ACCESS_TOKEN,
@@ -172,7 +174,7 @@ describe("middleware", () => {
       await middleware(request);
 
       // Assert
-      expect(mockVerifyToken).toHaveBeenCalledWith(MOCK_ACCESS_TOKEN);
+      expect(mockVerifyTokenEdge).toHaveBeenCalledWith(MOCK_ACCESS_TOKEN);
     });
   });
 
@@ -211,15 +213,17 @@ describe("middleware", () => {
   // -------------------------------------------------------------------------
 
   describe("access_token이 만료되었거나 무효한 경우", () => {
-    it("만료된 access_token에 유효한 refresh_token이 있으면 /api/auth/refresh를 호출한다", async () => {
+    it("만료된 access_token에 유효한 refresh_token이 있으면 직접 검증하여 새 토큰을 발급한다", async () => {
       // Arrange
-      mockVerifyToken.mockImplementation(() => {
-        throw new Error("jwt expired");
-      });
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ accessToken: MOCK_NEW_ACCESS_TOKEN }),
-      } as Response);
+      const MOCK_REFRESH_PAYLOAD = {
+        userId: MOCK_USER_ID,
+        type: "refresh" as const,
+        exp: Math.floor(Date.now() / 1000) + 7 * 24 * 3600,
+        iat: Math.floor(Date.now() / 1000),
+      };
+      mockVerifyTokenEdge
+        .mockRejectedValueOnce(new Error("jwt expired"))
+        .mockResolvedValueOnce(MOCK_REFRESH_PAYLOAD);
       const request = makeRequest("/dashboard", {
         accessToken: "expired.access.token",
         refreshToken: MOCK_REFRESH_TOKEN,
@@ -228,22 +232,24 @@ describe("middleware", () => {
       // Act
       await middleware(request);
 
-      // Assert
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/auth/refresh"),
-        expect.any(Object)
-      );
+      // Assert: verifyTokenEdge가 access_token, refresh_token 순으로 두 번 호출됨
+      expect(mockVerifyTokenEdge).toHaveBeenCalledTimes(2);
+      expect(mockVerifyTokenEdge).toHaveBeenNthCalledWith(1, "expired.access.token");
+      expect(mockVerifyTokenEdge).toHaveBeenNthCalledWith(2, MOCK_REFRESH_TOKEN);
+      expect(mockGenerateAccessTokenEdge).toHaveBeenCalledWith(MOCK_USER_ID);
     });
 
-    it("refresh 성공 시 새 access_token을 응답 쿠키에 설정하고 통과한다", async () => {
+    it("refresh 성공 시 새 access_token을 쿠키에 설정하고 동일 URL로 리다이렉트한다", async () => {
       // Arrange
-      mockVerifyToken.mockImplementation(() => {
-        throw new Error("jwt expired");
-      });
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ accessToken: MOCK_NEW_ACCESS_TOKEN }),
-      } as Response);
+      const MOCK_REFRESH_PAYLOAD = {
+        userId: MOCK_USER_ID,
+        type: "refresh" as const,
+        exp: Math.floor(Date.now() / 1000) + 7 * 24 * 3600,
+        iat: Math.floor(Date.now() / 1000),
+      };
+      mockVerifyTokenEdge
+        .mockRejectedValueOnce(new Error("jwt expired"))
+        .mockResolvedValueOnce(MOCK_REFRESH_PAYLOAD);
       const request = makeRequest("/dashboard", {
         accessToken: "expired.access.token",
         refreshToken: MOCK_REFRESH_TOKEN,
@@ -252,21 +258,15 @@ describe("middleware", () => {
       // Act
       const response = await middleware(request);
 
-      // Assert
-      expect(mockNextResponseNext).toHaveBeenCalled();
+      // Assert: 동일 URL로 리다이렉트하며 새 access_token 쿠키가 설정됨
+      expect(mockNextResponseRedirect).toHaveBeenCalled();
       const setCookie = response?.headers.get("set-cookie");
       expect(setCookie).toContain(MOCK_NEW_ACCESS_TOKEN);
     });
 
     it("refresh 실패 시 access_token이 있으면 통과한다", async () => {
-      // Arrange
-      mockVerifyToken.mockImplementation(() => {
-        throw new Error("jwt expired");
-      });
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        json: () => Promise.resolve({ error: "invalid refresh token" }),
-      } as Response);
+      // Arrange: access_token과 refresh_token 모두 검증 실패
+      mockVerifyTokenEdge.mockRejectedValue(new Error("jwt expired"));
       const request = makeRequest("/dashboard", {
         accessToken: "expired.access.token",
         refreshToken: "invalid.refresh.token",
@@ -280,11 +280,9 @@ describe("middleware", () => {
       expect(mockNextResponseRedirect).not.toHaveBeenCalled();
     });
 
-    it("refresh_token도 없는 경우 /api/auth/refresh를 호출하지 않고 통과한다", async () => {
+    it("refresh_token도 없는 경우 generateAccessTokenEdge를 호출하지 않고 통과한다", async () => {
       // Arrange
-      mockVerifyToken.mockImplementation(() => {
-        throw new Error("jwt expired");
-      });
+      mockVerifyTokenEdge.mockRejectedValue(new Error("jwt expired"));
       const request = makeRequest("/dashboard", {
         accessToken: "expired.access.token",
         // refreshToken 없음
@@ -294,20 +292,22 @@ describe("middleware", () => {
       await middleware(request);
 
       // Assert: access_token이 있으면 redirect 없이 통과
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockGenerateAccessTokenEdge).not.toHaveBeenCalled();
       expect(mockNextResponseNext).toHaveBeenCalled();
       expect(mockNextResponseRedirect).not.toHaveBeenCalled();
     });
 
     it("무효한 access_token(서명 불일치)에도 refresh를 시도한다", async () => {
       // Arrange
-      mockVerifyToken.mockImplementation(() => {
-        throw new Error("invalid signature");
-      });
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ accessToken: MOCK_NEW_ACCESS_TOKEN }),
-      } as Response);
+      const MOCK_REFRESH_PAYLOAD = {
+        userId: MOCK_USER_ID,
+        type: "refresh" as const,
+        exp: Math.floor(Date.now() / 1000) + 7 * 24 * 3600,
+        iat: Math.floor(Date.now() / 1000),
+      };
+      mockVerifyTokenEdge
+        .mockRejectedValueOnce(new Error("invalid signature"))
+        .mockResolvedValueOnce(MOCK_REFRESH_PAYLOAD);
       const request = makeRequest("/dashboard", {
         accessToken: "tampered.access.token",
         refreshToken: MOCK_REFRESH_TOKEN,
@@ -316,11 +316,9 @@ describe("middleware", () => {
       // Act
       await middleware(request);
 
-      // Assert
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/auth/refresh"),
-        expect.any(Object)
-      );
+      // Assert: refresh_token을 직접 검증하여 새 토큰 발급
+      expect(mockVerifyTokenEdge).toHaveBeenCalledTimes(2);
+      expect(mockGenerateAccessTokenEdge).toHaveBeenCalledWith(MOCK_USER_ID);
     });
   });
 
@@ -349,8 +347,8 @@ describe("middleware", () => {
         await middleware(request);
 
         // Assert
-        // 공개 경로는 verifyToken 호출 없이 바로 통과해야 함
-        expect(mockVerifyToken).not.toHaveBeenCalled();
+        // 공개 경로는 verifyTokenEdge 호출 없이 바로 통과해야 함
+        expect(mockVerifyTokenEdge).not.toHaveBeenCalled();
         expect(mockNextResponseRedirect).not.toHaveBeenCalled();
       }
     );
@@ -388,12 +386,9 @@ describe("middleware", () => {
       expect(mockNextResponseRedirect).toHaveBeenCalled();
     });
 
-    it("fetch 네트워크 오류 시 access_token이 있으면 통과한다", async () => {
-      // Arrange
-      mockVerifyToken.mockImplementation(() => {
-        throw new Error("jwt expired");
-      });
-      global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
+    it("refresh_token 검증 실패 시에도 access_token이 있으면 통과한다", async () => {
+      // Arrange: access_token과 refresh_token 모두 검증 실패
+      mockVerifyTokenEdge.mockRejectedValue(new Error("jwt expired"));
       const request = makeRequest("/dashboard", {
         accessToken: "expired.access.token",
         refreshToken: MOCK_REFRESH_TOKEN,
@@ -402,7 +397,7 @@ describe("middleware", () => {
       // Act
       await middleware(request);
 
-      // Assert: access_token이 있으면 fetch 오류가 발생해도 통과
+      // Assert: refresh_token 검증이 실패해도 통과
       expect(mockNextResponseNext).toHaveBeenCalled();
       expect(mockNextResponseRedirect).not.toHaveBeenCalled();
     });

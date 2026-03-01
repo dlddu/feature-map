@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth/jwt";
+import {
+  verifyTokenEdge,
+  generateAccessTokenEdge,
+} from "@/lib/auth/jwt-edge";
 
 // 공개 경로 목록 (미들웨어 적용 제외)
 const PUBLIC_PATHS = [
@@ -43,7 +46,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   // access_token 검증 시도
   try {
-    verifyToken(accessToken);
+    await verifyTokenEdge(accessToken);
     // 검증 성공
     return NextResponse.next();
   } catch {
@@ -56,33 +59,27 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       return NextResponse.next();
     }
 
-    // refresh 시도
+    // refresh token을 직접 검증하여 새 access token 발급
     try {
-      const refreshResponse = await fetch(
-        new URL("/api/auth/refresh", request.url).toString(),
-        {
-          method: "POST",
-          headers: { Cookie: `refresh_token=${refreshToken}` },
-        }
-      );
+      const payload = await verifyTokenEdge(refreshToken);
 
-      if (!refreshResponse.ok) {
-        // refresh 실패해도 access_token이 있으면 통과
+      if (payload.type !== "refresh") {
         return NextResponse.next();
       }
 
-      const data = await refreshResponse.json();
-      const newAccessToken = data.accessToken;
+      const newAccessToken = await generateAccessTokenEdge(payload.userId);
 
-      // 새 access_token 설정 후 통과
-      const response = NextResponse.next();
-      response.headers.set(
-        "Set-Cookie",
-        `access_token=${newAccessToken}; Path=/; SameSite=Lax`
-      );
+      // 새 access_token을 쿠키에 설정하고 동일 URL로 리다이렉트
+      // redirect 응답의 Set-Cookie는 브라우저가 반드시 처리하므로
+      // NextResponse.next()보다 쿠키 전파가 확실함
+      const response = NextResponse.redirect(new URL(request.url));
+      response.cookies.set("access_token", newAccessToken, {
+        path: "/",
+        sameSite: "lax",
+      });
       return response;
     } catch {
-      // fetch 오류 시에도 access_token이 있으면 통과
+      // refresh token 검증 실패 시 통과
       return NextResponse.next();
     }
   }
