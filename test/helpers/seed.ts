@@ -14,6 +14,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient({
   datasources: {
@@ -86,7 +87,7 @@ export async function seedDatabase(): Promise<SeedResult> {
     data: {
       id: "e2e-existing-email-user-001",
       email: "existing-user@example.com",
-      passwordHash: "$2b$10$placeholderHashForExistingUser",
+      passwordHash: bcrypt.hashSync("Password123!", 10),
       name: "Existing User",
     },
   });
