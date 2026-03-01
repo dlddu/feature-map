@@ -14,6 +14,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient({
   datasources: {
@@ -82,11 +83,12 @@ export async function seedDatabase(): Promise<SeedResult> {
 
   // E2E 중복 이메일 테스트를 위한 이메일/비밀번호 기반 유저 시딩
   // auth.test.ts의 "이미 등록된 이메일로 회원가입 시도" 케이스에서 사용
+  const existingUserPasswordHash = await bcrypt.hash("Password123!", 10);
   await prisma.user.create({
     data: {
       id: "e2e-existing-email-user-001",
       email: "existing-user@example.com",
-      passwordHash: "$2b$10$placeholderHashForExistingUser",
+      passwordHash: existingUserPasswordHash,
       name: "Existing User",
     },
   });
