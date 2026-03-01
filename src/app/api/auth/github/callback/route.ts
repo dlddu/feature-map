@@ -20,7 +20,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // code 없으면 에러 리다이렉트
   if (!code) {
     return NextResponse.redirect(
-      new URL("/login?error=missing_code", request.url)
+      new URL("/login?error=missing_code", request.url),
+      { status: 302 }
     );
   }
 
@@ -44,7 +45,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (!tokenResponse.ok) {
       return NextResponse.redirect(
-        new URL("/login?error=github_auth_failed", request.url)
+        new URL("/login?error=github_auth_failed", request.url),
+        { status: 302 }
       );
     }
 
@@ -53,7 +55,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (!githubAccessToken) {
       return NextResponse.redirect(
-        new URL("/login?error=github_auth_failed", request.url)
+        new URL("/login?error=github_auth_failed", request.url),
+        { status: 302 }
       );
     }
 
@@ -67,7 +70,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (!userResponse.ok) {
       return NextResponse.redirect(
-        new URL("/login?error=github_auth_failed", request.url)
+        new URL("/login?error=github_auth_failed", request.url),
+        { status: 302 }
       );
     }
 
@@ -97,7 +101,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     // /dashboard로 리다이렉트 + 쿠키 설정
     const response = NextResponse.redirect(
-      new URL("/dashboard", request.url)
+      new URL("/dashboard", request.url),
+      { status: 302 }
     );
 
     response.headers.append(
@@ -112,7 +117,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return response;
   } catch {
     return NextResponse.redirect(
-      new URL("/login?error=github_auth_failed", request.url)
+      new URL("/login?error=github_auth_failed", request.url),
+      { status: 302 }
     );
   }
 }
