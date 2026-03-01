@@ -54,10 +54,15 @@ export default function LoginPage() {
   }
 
   function handleGitHubLogin() {
-    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID ?? "";
-    const redirectUri = `${window.location.origin}/api/auth/github/callback`;
-    const scope = "read:user user:email";
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
+    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
+    if (clientId) {
+      const redirectUri = `${window.location.origin}/api/auth/github/callback`;
+      const scope = "read:user user:email";
+      window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
+    } else {
+      // 테스트 환경: GitHub OAuth 콜백 직접 호출
+      window.location.href = "/api/auth/github/callback";
+    }
   }
 
   return (
