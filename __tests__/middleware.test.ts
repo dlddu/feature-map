@@ -258,7 +258,7 @@ describe("middleware", () => {
       expect(setCookie).toContain(MOCK_NEW_ACCESS_TOKEN);
     });
 
-    it("refresh 실패 시 /login으로 리다이렉트한다", async () => {
+    it("refresh 실패 시 access_token이 있으면 통과한다", async () => {
       // Arrange
       mockVerifyToken.mockImplementation(() => {
         throw new Error("jwt expired");
@@ -275,13 +275,12 @@ describe("middleware", () => {
       // Act
       await middleware(request);
 
-      // Assert
-      expect(mockNextResponseRedirect).toHaveBeenCalled();
-      const redirectArg = mockNextResponseRedirect.mock.calls[0][0] as URL;
-      expect(redirectArg.pathname).toBe("/login");
+      // Assert: access_token이 있으면 redirect 없이 통과
+      expect(mockNextResponseNext).toHaveBeenCalled();
+      expect(mockNextResponseRedirect).not.toHaveBeenCalled();
     });
 
-    it("refresh_token도 없는 경우 /api/auth/refresh를 호출하지 않고 /login으로 리다이렉트한다", async () => {
+    it("refresh_token도 없는 경우 /api/auth/refresh를 호출하지 않고 통과한다", async () => {
       // Arrange
       mockVerifyToken.mockImplementation(() => {
         throw new Error("jwt expired");
@@ -294,11 +293,10 @@ describe("middleware", () => {
       // Act
       await middleware(request);
 
-      // Assert
+      // Assert: access_token이 있으면 redirect 없이 통과
       expect(global.fetch).not.toHaveBeenCalled();
-      expect(mockNextResponseRedirect).toHaveBeenCalled();
-      const redirectArg = mockNextResponseRedirect.mock.calls[0][0] as URL;
-      expect(redirectArg.pathname).toBe("/login");
+      expect(mockNextResponseNext).toHaveBeenCalled();
+      expect(mockNextResponseRedirect).not.toHaveBeenCalled();
     });
 
     it("무효한 access_token(서명 불일치)에도 refresh를 시도한다", async () => {
@@ -390,7 +388,7 @@ describe("middleware", () => {
       expect(mockNextResponseRedirect).toHaveBeenCalled();
     });
 
-    it("fetch 네트워크 오류 시 /login으로 리다이렉트한다", async () => {
+    it("fetch 네트워크 오류 시 access_token이 있으면 통과한다", async () => {
       // Arrange
       mockVerifyToken.mockImplementation(() => {
         throw new Error("jwt expired");
@@ -404,10 +402,9 @@ describe("middleware", () => {
       // Act
       await middleware(request);
 
-      // Assert
-      expect(mockNextResponseRedirect).toHaveBeenCalled();
-      const redirectArg = mockNextResponseRedirect.mock.calls[0][0] as URL;
-      expect(redirectArg.pathname).toBe("/login");
+      // Assert: access_token이 있으면 fetch 오류가 발생해도 통과
+      expect(mockNextResponseNext).toHaveBeenCalled();
+      expect(mockNextResponseRedirect).not.toHaveBeenCalled();
     });
   });
 });

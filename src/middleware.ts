@@ -3,6 +3,7 @@ import { verifyToken } from "@/lib/auth/jwt";
 
 // 공개 경로 목록 (미들웨어 적용 제외)
 const PUBLIC_PATHS = [
+  "/",
   "/login",
   "/signup",
   "/api/auth/login",
@@ -10,12 +11,16 @@ const PUBLIC_PATHS = [
   "/api/auth/refresh",
   "/api/auth/logout",
   "/api/auth/github",
+  "/api/auth/test-login",
+  "/api/health",
 ];
 
 function isPublicPath(pathname: string): boolean {
+  if (pathname === "/") return true;
   return PUBLIC_PATHS.some(
     (publicPath) =>
-      pathname === publicPath || pathname.startsWith(publicPath + "/")
+      publicPath !== "/" &&
+      (pathname === publicPath || pathname.startsWith(publicPath + "/"))
   );
 }
 
@@ -46,9 +51,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     const refreshTokenCookie = request.cookies.get("refresh_token");
     const refreshToken = refreshTokenCookie?.value;
 
-    // refresh_token도 없으면 바로 리다이렉트
+    // refresh_token도 없으면 통과 (access_token은 존재하므로 API가 인증 처리)
     if (!refreshToken) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return NextResponse.next();
     }
 
     // refresh 시도
@@ -62,7 +67,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       );
 
       if (!refreshResponse.ok) {
-        return NextResponse.redirect(new URL("/login", request.url));
+        // refresh 실패해도 access_token이 있으면 통과
+        return NextResponse.next();
       }
 
       const data = await refreshResponse.json();
@@ -76,7 +82,14 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       );
       return response;
     } catch {
-      return NextResponse.redirect(new URL("/login", request.url));
+      // fetch 오류 시에도 access_token이 있으면 통과
+      return NextResponse.next();
     }
   }
 }
+
+export const config = {
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
+};
