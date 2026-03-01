@@ -80,6 +80,17 @@ export async function seedDatabase(): Promise<SeedResult> {
     },
   });
 
+  // E2E 중복 이메일 테스트를 위한 이메일/비밀번호 기반 유저 시딩
+  // auth.test.ts의 "이미 등록된 이메일로 회원가입 시도" 케이스에서 사용
+  await prisma.user.create({
+    data: {
+      id: "e2e-existing-email-user-001",
+      email: "existing-user@example.com",
+      passwordHash: "$2b$10$placeholderHashForExistingUser",
+      name: "Existing User",
+    },
+  });
+
   const repo = await prisma.repo.create({
     data: {
       id: "e2e-test-repo-001",
@@ -105,8 +116,8 @@ export async function seedDatabase(): Promise<SeedResult> {
   return {
     user: {
       id: user.id,
-      githubId: user.githubId,
-      login: user.login,
+      githubId: user.githubId as number,
+      login: user.login as string,
       name: user.name ?? "E2E Test User",
     },
     repo: {
