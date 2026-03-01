@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth/jwt";
+import { verifyToken, generateAccessToken } from "@/lib/auth/jwt";
 
 // 공개 경로 목록 (미들웨어 적용 제외)
 const PUBLIC_PATHS = [
@@ -56,23 +56,15 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       return NextResponse.next();
     }
 
-    // refresh 시도
+    // refresh token을 직접 검증하여 새 access token 발급
     try {
-      const refreshResponse = await fetch(
-        new URL("/api/auth/refresh", request.url).toString(),
-        {
-          method: "POST",
-          headers: { Cookie: `refresh_token=${refreshToken}` },
-        }
-      );
+      const payload = verifyToken(refreshToken);
 
-      if (!refreshResponse.ok) {
-        // refresh 실패해도 access_token이 있으면 통과
+      if (payload.type !== "refresh") {
         return NextResponse.next();
       }
 
-      const data = await refreshResponse.json();
-      const newAccessToken = data.accessToken;
+      const newAccessToken = generateAccessToken(payload.userId);
 
       // 새 access_token 설정 후 통과
       const response = NextResponse.next();
@@ -82,7 +74,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       );
       return response;
     } catch {
-      // fetch 오류 시에도 access_token이 있으면 통과
+      // refresh token 검증 실패 시 통과
       return NextResponse.next();
     }
   }
