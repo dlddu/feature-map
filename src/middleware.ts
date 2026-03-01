@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken, generateAccessToken } from "@/lib/auth/jwt";
+import {
+  verifyTokenEdge,
+  generateAccessTokenEdge,
+} from "@/lib/auth/jwt-edge";
 
 // 공개 경로 목록 (미들웨어 적용 제외)
 const PUBLIC_PATHS = [
@@ -43,7 +46,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   // access_token 검증 시도
   try {
-    verifyToken(accessToken);
+    await verifyTokenEdge(accessToken);
     // 검증 성공
     return NextResponse.next();
   } catch {
@@ -58,13 +61,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
     // refresh token을 직접 검증하여 새 access token 발급
     try {
-      const payload = verifyToken(refreshToken);
+      const payload = await verifyTokenEdge(refreshToken);
 
       if (payload.type !== "refresh") {
         return NextResponse.next();
       }
 
-      const newAccessToken = generateAccessToken(payload.userId);
+      const newAccessToken = await generateAccessTokenEdge(payload.userId);
 
       // 새 access_token을 쿠키에 설정하고 동일 URL로 리다이렉트
       // redirect 응답의 Set-Cookie는 브라우저가 반드시 처리하므로
