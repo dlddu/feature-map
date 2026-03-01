@@ -6,15 +6,15 @@
  * Mock 전략:
  *  - @/lib/auth/jwt   → verifyToken을 mock으로 대체
  *  - next/server      → NextResponse를 spy하여 next() / redirect() 호출 검증
- *  - global.fetch     → /api/auth/refresh 내부 호출을 mock으로 시뮬레이션
+ *  - generateAccessToken → mock으로 대체하여 새 access_token 발급 검증
  *
  * 동작 요약:
  *  - 보호 경로(/dashboard/*)에 대해 쿠키의 access_token을 verifyToken으로 검증
  *  - 유효한 토큰 → NextResponse.next() 통과
  *  - 토큰 없음 → /login 리다이렉트
- *  - 만료/무효 토큰 → refresh_token 쿠키로 /api/auth/refresh 호출
- *    - refresh 성공 → 새 access_token 설정 후 통과
- *    - refresh 실패 → /login 리다이렉트
+ *  - 만료/무효 토큰 → refresh_token 쿠키를 직접 verifyToken으로 검증
+ *    - refresh 성공 → generateAccessToken으로 새 access_token 설정 후 통과
+ *    - refresh 실패 → 통과 (API가 인증 처리)
  *  - 공개 경로(/login, /signup, /api/auth/*)는 미들웨어 적용 제외
  */
 
@@ -59,13 +59,14 @@ jest.mock("next/server", () => {
 // ---------------------------------------------------------------------------
 
 import { middleware } from "@/middleware";
-import { verifyToken } from "@/lib/auth/jwt";
+import { verifyToken, generateAccessToken } from "@/lib/auth/jwt";
 
 // ---------------------------------------------------------------------------
 // 타입 헬퍼
 // ---------------------------------------------------------------------------
 
 const mockVerifyToken = verifyToken as jest.Mock;
+const mockGenerateAccessToken = generateAccessToken as jest.Mock;
 
 // ---------------------------------------------------------------------------
 // 테스트 픽스처
@@ -122,7 +123,7 @@ describe("middleware", () => {
     mockNextResponseNext.mockClear();
     mockNextResponseRedirect.mockClear();
     mockVerifyToken.mockReturnValue(MOCK_TOKEN_PAYLOAD);
-    global.fetch = jest.fn();
+    mockGenerateAccessToken.mockReturnValue(MOCK_NEW_ACCESS_TOKEN);
   });
 
   afterEach(() => {
@@ -211,15 +212,19 @@ describe("middleware", () => {
   // -------------------------------------------------------------------------
 
   describe("access_token이 만료되었거나 무효한 경우", () => {
-    it("만료된 access_token에 유효한 refresh_token이 있으면 /api/auth/refresh를 호출한다", async () => {
+    it("만료된 access_token에 유효한 refresh_token이 있으면 직접 검증하여 새 토큰을 발급한다", async () => {
       // Arrange
-      mockVerifyToken.mockImplementation(() => {
-        throw new Error("jwt expired");
-      });
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ accessToken: MOCK_NEW_ACCESS_TOKEN }),
-      } as Response);
+      const MOCK_REFRESH_PAYLOAD = {
+        userId: MOCK_USER_ID,
+        type: "refresh" as const,
+        exp: Math.floor(Date.now() / 1000) + 7 * 24 * 3600,
+        iat: Math.floor(Date.now() / 1000),
+      };
+      mockVerifyToken
+        .mockImplementationOnce(() => {
+          throw new Error("jwt expired");
+        })
+        .mockReturnValueOnce(MOCK_REFRESH_PAYLOAD);
       const request = makeRequest("/dashboard", {
         accessToken: "expired.access.token",
         refreshToken: MOCK_REFRESH_TOKEN,
@@ -228,22 +233,26 @@ describe("middleware", () => {
       // Act
       await middleware(request);
 
-      // Assert
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/auth/refresh"),
-        expect.any(Object)
-      );
+      // Assert: verifyToken이 access_token, refresh_token 순으로 두 번 호출됨
+      expect(mockVerifyToken).toHaveBeenCalledTimes(2);
+      expect(mockVerifyToken).toHaveBeenNthCalledWith(1, "expired.access.token");
+      expect(mockVerifyToken).toHaveBeenNthCalledWith(2, MOCK_REFRESH_TOKEN);
+      expect(mockGenerateAccessToken).toHaveBeenCalledWith(MOCK_USER_ID);
     });
 
     it("refresh 성공 시 새 access_token을 응답 쿠키에 설정하고 통과한다", async () => {
       // Arrange
-      mockVerifyToken.mockImplementation(() => {
-        throw new Error("jwt expired");
-      });
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ accessToken: MOCK_NEW_ACCESS_TOKEN }),
-      } as Response);
+      const MOCK_REFRESH_PAYLOAD = {
+        userId: MOCK_USER_ID,
+        type: "refresh" as const,
+        exp: Math.floor(Date.now() / 1000) + 7 * 24 * 3600,
+        iat: Math.floor(Date.now() / 1000),
+      };
+      mockVerifyToken
+        .mockImplementationOnce(() => {
+          throw new Error("jwt expired");
+        })
+        .mockReturnValueOnce(MOCK_REFRESH_PAYLOAD);
       const request = makeRequest("/dashboard", {
         accessToken: "expired.access.token",
         refreshToken: MOCK_REFRESH_TOKEN,
@@ -259,14 +268,10 @@ describe("middleware", () => {
     });
 
     it("refresh 실패 시 access_token이 있으면 통과한다", async () => {
-      // Arrange
+      // Arrange: access_token과 refresh_token 모두 검증 실패
       mockVerifyToken.mockImplementation(() => {
         throw new Error("jwt expired");
       });
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        json: () => Promise.resolve({ error: "invalid refresh token" }),
-      } as Response);
       const request = makeRequest("/dashboard", {
         accessToken: "expired.access.token",
         refreshToken: "invalid.refresh.token",
@@ -280,7 +285,7 @@ describe("middleware", () => {
       expect(mockNextResponseRedirect).not.toHaveBeenCalled();
     });
 
-    it("refresh_token도 없는 경우 /api/auth/refresh를 호출하지 않고 통과한다", async () => {
+    it("refresh_token도 없는 경우 generateAccessToken을 호출하지 않고 통과한다", async () => {
       // Arrange
       mockVerifyToken.mockImplementation(() => {
         throw new Error("jwt expired");
@@ -294,20 +299,24 @@ describe("middleware", () => {
       await middleware(request);
 
       // Assert: access_token이 있으면 redirect 없이 통과
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockGenerateAccessToken).not.toHaveBeenCalled();
       expect(mockNextResponseNext).toHaveBeenCalled();
       expect(mockNextResponseRedirect).not.toHaveBeenCalled();
     });
 
     it("무효한 access_token(서명 불일치)에도 refresh를 시도한다", async () => {
       // Arrange
-      mockVerifyToken.mockImplementation(() => {
-        throw new Error("invalid signature");
-      });
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ accessToken: MOCK_NEW_ACCESS_TOKEN }),
-      } as Response);
+      const MOCK_REFRESH_PAYLOAD = {
+        userId: MOCK_USER_ID,
+        type: "refresh" as const,
+        exp: Math.floor(Date.now() / 1000) + 7 * 24 * 3600,
+        iat: Math.floor(Date.now() / 1000),
+      };
+      mockVerifyToken
+        .mockImplementationOnce(() => {
+          throw new Error("invalid signature");
+        })
+        .mockReturnValueOnce(MOCK_REFRESH_PAYLOAD);
       const request = makeRequest("/dashboard", {
         accessToken: "tampered.access.token",
         refreshToken: MOCK_REFRESH_TOKEN,
@@ -316,11 +325,9 @@ describe("middleware", () => {
       // Act
       await middleware(request);
 
-      // Assert
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/auth/refresh"),
-        expect.any(Object)
-      );
+      // Assert: refresh_token을 직접 검증하여 새 토큰 발급
+      expect(mockVerifyToken).toHaveBeenCalledTimes(2);
+      expect(mockGenerateAccessToken).toHaveBeenCalledWith(MOCK_USER_ID);
     });
   });
 
@@ -388,12 +395,11 @@ describe("middleware", () => {
       expect(mockNextResponseRedirect).toHaveBeenCalled();
     });
 
-    it("fetch 네트워크 오류 시 access_token이 있으면 통과한다", async () => {
-      // Arrange
+    it("refresh_token 검증 실패 시에도 access_token이 있으면 통과한다", async () => {
+      // Arrange: access_token과 refresh_token 모두 검증 실패
       mockVerifyToken.mockImplementation(() => {
         throw new Error("jwt expired");
       });
-      global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
       const request = makeRequest("/dashboard", {
         accessToken: "expired.access.token",
         refreshToken: MOCK_REFRESH_TOKEN,
@@ -402,7 +408,7 @@ describe("middleware", () => {
       // Act
       await middleware(request);
 
-      // Assert: access_token이 있으면 fetch 오류가 발생해도 통과
+      // Assert: refresh_token 검증이 실패해도 통과
       expect(mockNextResponseNext).toHaveBeenCalled();
       expect(mockNextResponseRedirect).not.toHaveBeenCalled();
     });

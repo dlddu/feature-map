@@ -68,10 +68,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
       // 새 access_token 설정 후 통과
       const response = NextResponse.next();
-      response.headers.set(
-        "Set-Cookie",
-        `access_token=${newAccessToken}; Path=/; SameSite=Lax`
-      );
+      response.cookies.set("access_token", newAccessToken, {
+        path: "/",
+        sameSite: "lax",
+      });
       return response;
     } catch {
       // refresh token 검증 실패 시 통과
