@@ -11,11 +11,7 @@
  *
  * 실행: npx playwright test test/e2e/login.test.ts
  *
- * ⚠️ 모든 테스트는 DLD-613 구현 완료 전까지 skip 상태로 유지합니다.
- *    - POST /api/auth/login 미구현
- *    - POST /api/auth/logout 미구현
- *    - GET /login 페이지 미구현
- *    skip 제거 후 바로 실행 가능한 구조로 작성되었습니다.
+ * DLD-613 구현 완료. 모든 테스트가 활성화되었습니다.
  */
 
 import { test, expect } from "@playwright/test";
@@ -25,13 +21,11 @@ import {
   createRefreshToken,
 } from "../helpers/auth";
 
-// TODO: DLD-613 구현 완료 후 test.describe.skip → test.describe 로 변경
-
 // ---------------------------------------------------------------------------
 // 이메일/비밀번호 로그인
 // ---------------------------------------------------------------------------
 
-test.describe.skip("로그인: 이메일/비밀번호 기반 로그인 플로우", () => {
+test.describe("로그인: 이메일/비밀번호 기반 로그인 플로우", () => {
   // ---------------------------------------------------------------------------
   // Happy Path: 유효한 자격증명으로 로그인 후 대시보드 리다이렉트
   // ---------------------------------------------------------------------------
@@ -84,7 +78,7 @@ test.describe.skip("로그인: 이메일/비밀번호 기반 로그인 플로우
 // GitHub OAuth 로그인
 // ---------------------------------------------------------------------------
 
-test.describe.skip("로그인: GitHub OAuth 로그인 플로우", () => {
+test.describe("로그인: GitHub OAuth 로그인 플로우", () => {
   // ---------------------------------------------------------------------------
   // Happy Path: GitHub OAuth 콜백 mock으로 대시보드 리다이렉트
   // ---------------------------------------------------------------------------
@@ -96,15 +90,18 @@ test.describe.skip("로그인: GitHub OAuth 로그인 플로우", () => {
     //          실제 GitHub 인증 없이 인증 완료 상태를 시뮬레이션
     await page.route("/api/auth/github/callback*", async (route) => {
       // OAuth 콜백 성공 시 쿠키 설정 후 대시보드로 리다이렉트하는 응답 mock
+      // Playwright route.fulfill()이 Mobile Safari에서 302를 지원하지 않으므로
+      // 200 + meta refresh로 리다이렉트를 시뮬레이션
       await route.fulfill({
-        status: 302,
+        status: 200,
         headers: {
-          Location: "/dashboard",
+          "Content-Type": "text/html",
           "Set-Cookie": [
             `access_token=mock-access-token; Path=/; HttpOnly`,
             `refresh_token=mock-refresh-token; Path=/; HttpOnly`,
           ].join(", "),
         },
+        body: '<html><head><meta http-equiv="refresh" content="0;url=/dashboard"></head><body></body></html>',
       });
     });
 
@@ -121,7 +118,7 @@ test.describe.skip("로그인: GitHub OAuth 로그인 플로우", () => {
 // 로그아웃
 // ---------------------------------------------------------------------------
 
-test.describe.skip("로그아웃: 인증 상태 해제 플로우", () => {
+test.describe("로그아웃: 인증 상태 해제 플로우", () => {
   // ---------------------------------------------------------------------------
   // Happy Path: 인증된 상태에서 로그아웃 후 로그인 페이지 리다이렉트 및 쿠키 삭제
   // ---------------------------------------------------------------------------
@@ -159,7 +156,7 @@ test.describe.skip("로그아웃: 인증 상태 해제 플로우", () => {
 // JWT 갱신 플로우
 // ---------------------------------------------------------------------------
 
-test.describe.skip("JWT 갱신: 만료된 Access Token과 유효한 Refresh Token으로 자동 갱신", () => {
+test.describe("JWT 갱신: 만료된 Access Token과 유효한 Refresh Token으로 자동 갱신", () => {
   // ---------------------------------------------------------------------------
   // Happy Path: 만료된 Access Token + 유효한 Refresh Token으로 보호된 페이지 정상 접근
   // ---------------------------------------------------------------------------
