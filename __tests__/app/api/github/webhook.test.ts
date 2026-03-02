@@ -94,7 +94,7 @@ const VALID_SIGNATURE = "sha256=valid-signature-hex";
 const MOCK_USER = {
   id: MOCK_USER_ID,
   email: "test@example.com",
-  githubId: String(MOCK_GITHUB_USER_ID),
+  githubId: MOCK_GITHUB_USER_ID,
   installationId: null,
   createdAt: new Date("2026-02-28T00:00:00.000Z"),
   updatedAt: new Date("2026-02-28T00:00:00.000Z"),
@@ -227,7 +227,7 @@ describe("POST /api/github/webhook", () => {
       expect(mockPrismaUser.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            githubId: String(MOCK_GITHUB_USER_ID),
+            githubId: MOCK_GITHUB_USER_ID,
           }),
         })
       );
