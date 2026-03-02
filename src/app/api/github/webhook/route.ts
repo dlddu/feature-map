@@ -66,7 +66,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: true }, { status: 200 });
   }
 
-  const githubId = String(installation.account.id);
+  const githubId = Number(installation.account.id);
 
   if (action === "created") {
     // githubId로 사용자 조회
