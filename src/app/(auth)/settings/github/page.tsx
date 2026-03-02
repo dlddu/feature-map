@@ -102,7 +102,7 @@ export default function SettingsGithubPage() {
                 )}
               </div>
               <p className="text-sm text-zinc-400">
-                GitHub App이 설치되어 있습니다. 아래에서 접근 가능한 레포지토리를 확인하세요.
+                GitHub App이 설치되어 있습니다. 아래에서 연결 가능한 저장소를 확인하세요.
               </p>
             </div>
           ) : (
