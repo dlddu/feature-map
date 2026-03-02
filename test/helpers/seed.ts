@@ -78,6 +78,7 @@ export async function seedDatabase(): Promise<SeedResult> {
       // accessToken/refreshToken은 JWT 헬퍼로 생성한 값을 별도 주입
       accessToken: "seed-access-token-placeholder",
       refreshToken: "seed-refresh-token-placeholder",
+      installationId: 12345,
     },
   });
 
@@ -89,6 +90,18 @@ export async function seedDatabase(): Promise<SeedResult> {
       email: "existing-user@example.com",
       passwordHash: bcrypt.hashSync("Password123!", 10),
       name: "Existing User",
+    },
+  });
+
+  // GitHub App 미설치 상태의 신규 유저 시딩
+  // github-app.test.ts의 "GitHub App이 설치되지 않은 신규 유저" 케이스에서 사용
+  await prisma.user.create({
+    data: {
+      id: "e2e-test-user-002",
+      email: "fresh-user@example.com",
+      passwordHash: bcrypt.hashSync("Password123!", 10),
+      name: "Fresh User",
+      // installationId 없음 — GitHub App 미설치 상태
     },
   });
 
