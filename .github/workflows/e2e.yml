@@ -113,6 +113,15 @@ jobs:
             sleep 2
           done
 
+      - name: Verify mock server connectivity
+        run: |
+          echo "=== Mock GitHub server ==="
+          curl -sf http://127.0.0.1:3101/health && echo " OK" || echo " FAIL"
+          curl -sf http://127.0.0.1:3101/api/v3/installation/repositories | head -c 200 && echo || echo "FAIL: mock repos endpoint"
+          echo ""
+          echo "=== Mock LLM server ==="
+          curl -sf http://127.0.0.1:3102/health && echo " OK" || echo " FAIL"
+
       - name: Run Playwright E2E tests
         run: npx playwright test
         env:
