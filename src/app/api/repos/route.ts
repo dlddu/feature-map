@@ -1,51 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/client";
-import { verifyToken } from "@/lib/auth/jwt";
+import { requireUser, isAuthFailure } from "@/lib/auth/require-user";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  // 쿠키에서 access_token 추출
-  const token = request.cookies.get("access_token")?.value;
+  const auth = await requireUser(request);
+  if (isAuthFailure(auth)) return auth.response;
 
-  if (!token || token === "") {
-    return NextResponse.json(
-      { error: "인증이 필요합니다" },
-      { status: 401 }
-    );
-  }
-
-  // 토큰 검증
-  let userId: string;
-  try {
-    const payload = verifyToken(token);
-    if (payload.type !== "access") {
-      return NextResponse.json(
-        { error: "유효하지 않은 토큰 타입입니다" },
-        { status: 401 }
-      );
-    }
-    userId = payload.userId;
-  } catch {
-    return NextResponse.json(
-      { error: "유효하지 않은 토큰입니다" },
-      { status: 401 }
-    );
-  }
-
-  // DB에서 사용자 조회
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-  });
-
-  if (!user) {
-    return NextResponse.json(
-      { error: "사용자를 찾을 수 없습니다" },
-      { status: 401 }
-    );
-  }
+  const { user } = auth;
 
   // 등록된 레포 목록 조회
   const repos = await prisma.repo.findMany({
-    where: { userId },
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
   });
 
@@ -53,45 +18,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  // 쿠키에서 access_token 추출
-  const token = request.cookies.get("access_token")?.value;
+  const auth = await requireUser(request);
+  if (isAuthFailure(auth)) return auth.response;
 
-  if (!token || token === "") {
-    return NextResponse.json(
-      { error: "인증이 필요합니다" },
-      { status: 401 }
-    );
-  }
-
-  // 토큰 검증
-  let userId: string;
-  try {
-    const payload = verifyToken(token);
-    if (payload.type !== "access") {
-      return NextResponse.json(
-        { error: "유효하지 않은 토큰 타입입니다" },
-        { status: 401 }
-      );
-    }
-    userId = payload.userId;
-  } catch {
-    return NextResponse.json(
-      { error: "유효하지 않은 토큰입니다" },
-      { status: 401 }
-    );
-  }
-
-  // DB에서 사용자 조회
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-  });
-
-  if (!user) {
-    return NextResponse.json(
-      { error: "사용자를 찾을 수 없습니다" },
-      { status: 401 }
-    );
-  }
+  const { user } = auth;
 
   // Body 파싱
   let body: Record<string, unknown>;
@@ -159,7 +89,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       defaultBranch: typeof defaultBranch === "string" ? defaultBranch : "main",
       cloneUrl: typeof cloneUrl === "string" ? cloneUrl : undefined,
       installationId,
-      userId,
+      userId: user.id,
     },
   });
 

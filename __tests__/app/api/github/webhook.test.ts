@@ -171,7 +171,10 @@ function makeWebhookRequest(
 // ---------------------------------------------------------------------------
 
 describe("POST /api/github/webhook", () => {
+  const originalEnv = process.env;
+
   beforeEach(() => {
+    process.env = { ...originalEnv, GITHUB_WEBHOOK_SECRET: "test-webhook-secret" };
     // 기본 mock 반환값 설정 — 서명 검증 성공, 사용자 존재
     mockCreateHmac.mockReturnValue({
       update: jest.fn().mockReturnThis(),
@@ -181,6 +184,10 @@ describe("POST /api/github/webhook", () => {
     mockPrismaUser.findFirst.mockResolvedValue(MOCK_USER);
     mockPrismaUser.update.mockResolvedValue(MOCK_USER_WITH_INSTALLATION);
     mockPrismaRepo.deleteMany.mockResolvedValue({ count: 0 });
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
   });
 
   // -------------------------------------------------------------------------
@@ -543,6 +550,21 @@ describe("POST /api/github/webhook", () => {
       // Assert
       const contentType = response.headers.get("content-type");
       expect(contentType).toContain("application/json");
+    });
+
+    it("GITHUB_WEBHOOK_SECRET 환경 변수가 없으면 500을 반환한다", async () => {
+      // Arrange
+      delete process.env.GITHUB_WEBHOOK_SECRET;
+      mockCreateHmac.mockImplementation(() => {
+        throw new Error("GITHUB_WEBHOOK_SECRET environment variable is not set");
+      });
+      const request = makeWebhookRequest(INSTALLATION_CREATED_PAYLOAD);
+
+      // Act
+      const response = await POST(request);
+
+      // Assert
+      expect(response.status).toBe(500);
     });
   });
 });

@@ -74,7 +74,8 @@ export default function SettingsGithubPage() {
   const isInstalled = user?.installationId != null;
 
   function handleInstall() {
-    window.location.href = `https://github.com/apps/featuremap/installations/new`;
+    const appName = process.env.NEXT_PUBLIC_GITHUB_APP_NAME ?? "featuremap";
+    window.location.href = `https://github.com/apps/${appName}/installations/new`;
   }
 
   return (

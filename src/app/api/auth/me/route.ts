@@ -1,39 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/client";
-import { verifyToken } from "@/lib/auth/jwt";
+import { requireUser, isAuthFailure } from "@/lib/auth/require-user";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  // 쿠키에서 access_token 추출
-  const token = request.cookies.get("access_token")?.value;
+  const auth = await requireUser(request);
+  if (isAuthFailure(auth)) return auth.response;
 
-  if (!token || token === "") {
-    return NextResponse.json(
-      { error: "인증이 필요합니다" },
-      { status: 401 }
-    );
-  }
+  const { user: authUser } = auth;
 
-  // 토큰 검증
-  let userId: string;
-  try {
-    const payload = verifyToken(token);
-    if (payload.type !== "access") {
-      return NextResponse.json(
-        { error: "유효하지 않은 토큰 타입입니다" },
-        { status: 401 }
-      );
-    }
-    userId = payload.userId;
-  } catch {
-    return NextResponse.json(
-      { error: "유효하지 않은 토큰입니다" },
-      { status: 401 }
-    );
-  }
-
-  // DB에서 사용자 조회
+  // select를 사용하여 필요한 필드만 반환
   const user = await prisma.user.findUnique({
-    where: { id: userId },
+    where: { id: authUser.id },
     select: {
       id: true,
       name: true,
