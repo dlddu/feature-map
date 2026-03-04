@@ -88,7 +88,7 @@ jobs:
         run: |
           cp -r .next/static .next/standalone/.next/static
           cp -r public .next/standalone/public 2>/dev/null || true
-          node .next/standalone/server.js &
+          node .next/standalone/server.js > /tmp/nextjs-server.log 2>&1 &
         env:
           DATABASE_URL: "file:${{ github.workspace }}/e2e-test.db"
           JWT_SECRET: "e2e-test-jwt-secret-local"
@@ -113,14 +113,35 @@ jobs:
             sleep 2
           done
 
-      - name: Verify mock server connectivity
+      - name: Verify server and mock connectivity
+        env:
+          DATABASE_URL: "file:${{ github.workspace }}/e2e-test.db"
         run: |
-          echo "=== Mock GitHub server ==="
+          echo "=== 1. Mock GitHub server (curl) ==="
           curl -sf http://127.0.0.1:3101/health && echo " OK" || echo " FAIL"
-          curl -sf http://127.0.0.1:3101/api/v3/installation/repositories | head -c 200 && echo || echo "FAIL: mock repos endpoint"
+          curl -sf http://127.0.0.1:3101/api/v3/installation/repositories | head -c 200 && echo || echo "FAIL: mock repos"
           echo ""
-          echo "=== Mock LLM server ==="
-          curl -sf http://127.0.0.1:3102/health && echo " OK" || echo " FAIL"
+          echo "=== 2. Mock GitHub server (Node.js fetch — same runtime as API routes) ==="
+          node -e "fetch('http://127.0.0.1:3101/api/v3/installation/repositories').then(r=>r.json()).then(d=>console.log('Node.js fetch OK, repos:',d.total_count)).catch(e=>console.error('Node.js fetch FAIL:',e.message))"
+          echo ""
+          echo "=== 3. Seed test DB for verification ==="
+          node -e "
+            const { PrismaClient } = require('@prisma/client');
+            const p = new PrismaClient();
+            p.user.create({data:{id:'e2e-test-user-001',githubId:9000001,login:'test-user',name:'Test',avatarUrl:'https://x.com',accessToken:'x',refreshToken:'x',installationId:12345}})
+              .then(()=>console.log('Seed OK'))
+              .catch(e=>console.log('Seed skip (may already exist):',e.message))
+              .finally(()=>p.\$disconnect());
+          "
+          echo ""
+          echo "=== 4. Next.js API endpoints ==="
+          TOKEN=$(node -e "const jwt=require('jsonwebtoken');process.stdout.write(jwt.sign({userId:'e2e-test-user-001',type:'access'},'e2e-test-jwt-secret-local',{expiresIn:'15m'}))")
+          echo "Testing /api/auth/me..."
+          curl -s -b "access_token=$TOKEN" http://localhost:3000/api/auth/me
+          echo ""
+          echo "Testing /api/github/repos..."
+          curl -s -b "access_token=$TOKEN" http://localhost:3000/api/github/repos
+          echo ""
 
       - name: Run Playwright E2E tests
         run: npx playwright test
@@ -130,6 +151,12 @@ jobs:
           MOCK_LLM_URL: "http://localhost:3102"
           DATABASE_URL: "file:${{ github.workspace }}/e2e-test.db"
           JWT_SECRET: "e2e-test-jwt-secret-local"
+
+      - name: Show server logs on failure
+        if: failure()
+        run: |
+          echo "=== Next.js server logs ==="
+          cat /tmp/nextjs-server.log || echo "No server log found"
 
       - name: Upload Playwright report
         if: always()
