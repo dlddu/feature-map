@@ -1,13 +1,21 @@
 import { App } from "@octokit/app";
 import { Octokit } from "@octokit/core";
 
+// Next.js 번들러가 process.env.X를 빌드 타임에 인라인하는 것을 방지하기 위해
+// 간접 참조를 사용합니다. 이렇게 하면 런타임에 실제 환경변수를 읽습니다.
+const env = process.env;
+
+function getGithubApiUrl(): string | undefined {
+  return env["GITHUB_API_URL"];
+}
+
 let app: App | null = null;
 
 function getApp(): App {
   if (!app) {
-    const appId = process.env.GITHUB_APP_ID || "";
-    const privateKey = process.env.GITHUB_PRIVATE_KEY || "";
-    const githubApiUrl = process.env.GITHUB_API_URL;
+    const appId = env["GITHUB_APP_ID"] || "";
+    const privateKey = env["GITHUB_PRIVATE_KEY"] || "";
+    const githubApiUrl = getGithubApiUrl();
 
     const options: ConstructorParameters<typeof App>[0] = {
       appId,
@@ -26,7 +34,7 @@ function getApp(): App {
 }
 
 export async function getInstallationOctokit(installationId: number) {
-  const githubApiUrl = process.env.GITHUB_API_URL;
+  const githubApiUrl = getGithubApiUrl();
 
   // Mock 환경: GITHUB_API_URL이 설정되면 @octokit/app의 JWT 서명을 우회하고
   // mock 서버에서 직접 토큰을 발급받아 사용
