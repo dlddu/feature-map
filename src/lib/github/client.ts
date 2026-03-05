@@ -29,11 +29,18 @@ export async function getInstallationOctokit(installationId: number) {
   // Mock 환경: GITHUB_API_URL이 설정되면 @octokit/app의 JWT 서명을 우회하고
   // mock 서버에서 직접 토큰을 발급받아 사용
   if (GITHUB_API_URL) {
-    const tokenRes = await fetch(
-      `${GITHUB_API_URL}/api/v3/app/installations/${installationId}/access_tokens`,
-      { method: "POST" }
-    );
+    const tokenUrl = `${GITHUB_API_URL}/api/v3/app/installations/${installationId}/access_tokens`;
+    console.log(`[github-client] Fetching token from: ${tokenUrl}`);
+    const tokenRes = await fetch(tokenUrl, { method: "POST" });
+    console.log(`[github-client] Token response: ${tokenRes.status}`);
+    if (!tokenRes.ok) {
+      const body = await tokenRes.text().catch(() => "(read failed)");
+      throw new Error(
+        `Token fetch failed: ${tokenRes.status} ${tokenRes.statusText} — ${body}`
+      );
+    }
     const tokenData = await tokenRes.json();
+    console.log(`[github-client] Token acquired, baseUrl: ${GITHUB_API_URL}/api/v3`);
     return new Octokit({
       auth: tokenData.token,
       baseUrl: `${GITHUB_API_URL}/api/v3`,
