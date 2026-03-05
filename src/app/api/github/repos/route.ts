@@ -36,7 +36,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       {
         error: "GitHub 레포 목록을 가져오는데 실패했습니다",
-        ...(process.env.NODE_ENV !== "production" && { debug: detail }),
+        debug: detail,
       },
       { status: 500 }
     );
