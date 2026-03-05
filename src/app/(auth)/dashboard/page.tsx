@@ -24,14 +24,35 @@ interface GithubRepo {
   clone_url: string;
 }
 
+interface UserInfo {
+  id: string;
+  installationId: number | null;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
 
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [registeredRepos, setRegisteredRepos] = useState<RegisteredRepo[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [githubRepos, setGithubRepos] = useState<GithubRepo[]>([]);
   const [selectedRepo, setSelectedRepo] = useState<GithubRepo | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+
+  // 현재 사용자 정보 조회
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (!res.ok) return;
+        const data = await res.json();
+        setUser(data.user);
+      } catch {
+        // 사용자 정보 조회 실패 시 무시
+      }
+    }
+    fetchUser();
+  }, []);
 
   // 등록된 레포 목록 조회
   const fetchRegisteredRepos = useCallback(async () => {
@@ -86,13 +107,15 @@ export default function DashboardPage() {
     setIsConnecting(true);
 
     try {
+      if (!user?.installationId) return;
+
       const res = await fetch("/api/repos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           githubRepoId: selectedRepo.id,
           fullName: selectedRepo.full_name,
-          installationId: 12345, // 사용자의 installationId - 실제 구현에서는 /api/auth/me에서 가져옴
+          installationId: user.installationId,
           defaultBranch: selectedRepo.default_branch,
           cloneUrl: selectedRepo.clone_url,
         }),

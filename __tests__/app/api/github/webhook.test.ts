@@ -172,6 +172,9 @@ function makeWebhookRequest(
 
 describe("POST /api/github/webhook", () => {
   beforeEach(() => {
+    // GITHUB_WEBHOOK_SECRET 설정
+    process.env.GITHUB_WEBHOOK_SECRET = "test-webhook-secret";
+
     // 기본 mock 반환값 설정 — 서명 검증 성공, 사용자 존재
     mockCreateHmac.mockReturnValue({
       update: jest.fn().mockReturnThis(),

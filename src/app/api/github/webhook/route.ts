@@ -3,7 +3,11 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/db/client";
 
 function verifyWebhookSignature(payload: string, signature: string): boolean {
-  const hmac = createHmac("sha256", process.env.GITHUB_WEBHOOK_SECRET!);
+  const secret = process.env.GITHUB_WEBHOOK_SECRET;
+  if (!secret) {
+    throw new Error("GITHUB_WEBHOOK_SECRET environment variable is not set");
+  }
+  const hmac = createHmac("sha256", secret);
   hmac.update(payload);
   const expected = `sha256=${hmac.digest("hex")}`;
   return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
@@ -30,7 +34,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const payload = await request.text();
 
   // 서명 검증 수행
-  const isValid = verifyWebhookSignature(payload, signature);
+  let isValid: boolean;
+  try {
+    isValid = verifyWebhookSignature(payload, signature);
+  } catch {
+    return NextResponse.json(
+      { error: "Webhook secret not configured" },
+      { status: 500 }
+    );
+  }
   if (!isValid) {
     return NextResponse.json(
       { error: "Invalid signature" },
