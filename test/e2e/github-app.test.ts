@@ -34,11 +34,43 @@ test.describe("설정 > GitHub 탭: GitHub App 설치 상태 표시", () => {
   test("GitHub App이 설치된 상태에서 설정 GitHub 탭에 설치 완료 상태가 표시된다", async ({
     page,
   }) => {
-    // Arrange: 시드 데이터의 e2e-test-user-001은 installationId: 12345로
-    //          이미 GitHub App이 설치된 상태 (seed.ts 참고)
+    // ===== DEBUG: 구간 1 - settings/github 페이지 로드 및 API 응답 추적 =====
+    const apiLogs: { url: string; status: number; body: string }[] = [];
+
+    page.on("response", async (response) => {
+      const url = response.url();
+      if (url.includes("/api/")) {
+        let body = "";
+        try { body = await response.text(); } catch { body = "(read failed)"; }
+        apiLogs.push({ url, status: response.status(), body });
+        console.log(`[DEBUG 구간1] ${response.status()} ${url}`);
+        console.log(`[DEBUG 구간1] Body: ${body.substring(0, 500)}`);
+      }
+    });
+
+    page.on("console", (msg) => {
+      if (msg.type() === "error" || msg.type() === "warning") {
+        console.log(`[PAGE ${msg.type().toUpperCase()}] ${msg.text()}`);
+      }
+    });
 
     // Act: 설정 페이지의 GitHub 탭으로 이동
     await page.goto("/settings/github");
+
+    // DEBUG: API 응답 대기 후 상태 확인
+    await page.waitForTimeout(3000);
+
+    console.log("\n===== [구간1] API 호출 요약 =====");
+    for (const log of apiLogs) {
+      console.log(`  ${log.status} ${log.url}`);
+      console.log(`  → ${log.body.substring(0, 300)}`);
+    }
+
+    const mainText = await page.locator("main").textContent().catch(() => "(main not found)");
+    console.log(`\n===== [구간1] <main> 텍스트 =====\n${mainText}\n`);
+
+    // DEBUG: 스크린샷
+    await page.screenshot({ path: "test-results/debug-01-settings-github.png", fullPage: true });
 
     // Assert: GitHub App 설치 완료 상태가 표시되어야 한다
     await expect(
@@ -108,14 +140,31 @@ test.describe('대시보드: "+ 레포 연결" 플로우로 레포 카드 표시
   test('대시보드에서 "+ 레포 연결" 버튼 클릭 후 레포를 선택하면 대시보드에 레포 카드가 표시된다', async ({
     page,
   }) => {
-    // Arrange: Mock GitHub API가 레포 목록(test-org/sample-app, test-org/backend-service)을
-    //          반환하도록 설정되어 있음 (mock-server port 3101 또는 MOCK_GITHUB_URL)
-    //          - test-org/sample-app은 이미 등록된 상태 (seed.ts 참고)
-    //          - test-org/backend-service는 미등록 상태 (신규 연결 시나리오)
+    // ===== DEBUG: 구간 2 - 대시보드 레포 연결 플로우 추적 =====
+    const apiLogs: { url: string; status: number; method: string; body: string }[] = [];
+
+    page.on("response", async (response) => {
+      const url = response.url();
+      if (url.includes("/api/")) {
+        let body = "";
+        try { body = await response.text(); } catch { body = "(read failed)"; }
+        const method = response.request().method();
+        apiLogs.push({ url, status: response.status(), method, body });
+        console.log(`[DEBUG 구간2] ${method} ${response.status()} ${url}`);
+        console.log(`[DEBUG 구간2] Body: ${body.substring(0, 500)}`);
+      }
+    });
+
+    page.on("console", (msg) => {
+      if (msg.type() === "error" || msg.type() === "warning") {
+        console.log(`[PAGE ${msg.type().toUpperCase()}] ${msg.text()}`);
+      }
+    });
 
     // 레포 등록 API를 mock하여 실제 DB 저장 없이 성공 응답 시뮬레이션
     await page.route("/api/repos", async (route) => {
       if (route.request().method() === "POST") {
+        console.log(`[DEBUG 구간2] POST /api/repos intercepted`);
         await route.fulfill({
           status: 201,
           contentType: "application/json",
@@ -134,6 +183,12 @@ test.describe('대시보드: "+ 레포 연결" 플로우로 레포 카드 표시
 
     // Act: 대시보드 진입
     await page.goto("/dashboard");
+    await page.waitForTimeout(2000);
+
+    // DEBUG: 대시보드 초기 상태 확인
+    const dashboardText = await page.locator("main").textContent().catch(() => "(main not found)");
+    console.log(`\n===== [구간2] 대시보드 초기 텍스트 =====\n${dashboardText}\n`);
+    await page.screenshot({ path: "test-results/debug-02-dashboard-init.png", fullPage: true });
 
     // Act: "+ 레포 연결" 버튼(AddRepoButton) 클릭
     await page.getByRole("button", { name: /\+ 레포 연결|\+ 레포|레포 연결/ }).click();
@@ -142,6 +197,18 @@ test.describe('대시보드: "+ 레포 연결" 플로우로 레포 카드 표시
     await expect(
       page.getByRole("dialog").or(page.locator("[data-testid='repo-select-sheet']"))
     ).toBeVisible();
+
+    // DEBUG: 다이얼로그 열린 후 API 응답 대기 & 상태 확인
+    await page.waitForTimeout(2000);
+
+    const dialogText = await page.locator("[role='dialog']").textContent().catch(() => "(dialog not found)");
+    console.log(`\n===== [구간2] 다이얼로그 텍스트 =====\n${dialogText}\n`);
+    console.log("\n===== [구간2] API 호출 요약 =====");
+    for (const log of apiLogs) {
+      console.log(`  ${log.method} ${log.status} ${log.url}`);
+      console.log(`  → ${log.body.substring(0, 300)}`);
+    }
+    await page.screenshot({ path: "test-results/debug-02-dashboard-dialog.png", fullPage: true });
 
     // Act: 미등록 레포(test-org/backend-service) 선택
     await page.getByText("test-org/backend-service").click();
@@ -214,11 +281,35 @@ test.describe("GitHub App 접근 가능한 레포 목록 표시", () => {
   test("GitHub App으로 접근 가능한 레포 목록이 설정 GitHub 탭에 표시된다", async ({
     page,
   }) => {
-    // Arrange: Mock GitHub 서버(port 3101)의 GET /api/v3/installation/repositories는
-    //          test-org/sample-app과 test-org/backend-service 2개를 반환 (repos.json 참고)
+    // ===== DEBUG: 구간 3 - settings/github 레포 목록 표시 추적 =====
+    const apiLogs: { url: string; status: number; body: string }[] = [];
+
+    page.on("response", async (response) => {
+      const url = response.url();
+      if (url.includes("/api/")) {
+        let body = "";
+        try { body = await response.text(); } catch { body = "(read failed)"; }
+        apiLogs.push({ url, status: response.status(), body });
+        console.log(`[DEBUG 구간3] ${response.status()} ${url}`);
+        console.log(`[DEBUG 구간3] Body: ${body.substring(0, 500)}`);
+      }
+    });
 
     // Act: 설정 페이지의 GitHub 탭으로 이동
     await page.goto("/settings/github");
+
+    // DEBUG: API 응답 대기 후 상태 확인
+    await page.waitForTimeout(3000);
+
+    console.log("\n===== [구간3] API 호출 요약 =====");
+    for (const log of apiLogs) {
+      console.log(`  ${log.status} ${log.url}`);
+      console.log(`  → ${log.body.substring(0, 300)}`);
+    }
+
+    const mainText = await page.locator("main").textContent().catch(() => "(main not found)");
+    console.log(`\n===== [구간3] <main> 텍스트 =====\n${mainText}\n`);
+    await page.screenshot({ path: "test-results/debug-03-settings-repos.png", fullPage: true });
 
     // Assert: 접근 가능한 레포 목록 섹션이 표시되어야 한다
     await expect(
