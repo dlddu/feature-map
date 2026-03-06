@@ -100,22 +100,25 @@ jobs:
             sleep 2
           done
 
-      - name: Verify seed data via API
+      - name: Verify seed data and mock connectivity
         run: |
           node -e "
             const jwt = require('jsonwebtoken');
             const token = jwt.sign({ userId: 'e2e-test-user-001', type: 'access' }, 'e2e-test-jwt-secret-local', { expiresIn: '15m' });
-            fetch('http://localhost:3000/api/auth/me', { headers: { Cookie: 'access_token=' + token } })
-              .then(r => r.json())
-              .then(d => {
-                console.log('API /auth/me:', JSON.stringify(d));
-                if (!d.user?.installationId) {
-                  console.error('FAIL: installationId is missing');
-                  process.exit(1);
-                }
-                console.log('OK: installationId =', d.user.installationId);
-              })
-              .catch(e => { console.error('API error:', e); process.exit(1); });
+            const cookie = 'access_token=' + token;
+            async function check() {
+              const me = await fetch('http://localhost:3000/api/auth/me', { headers: { Cookie: cookie } }).then(r => r.json());
+              console.log('/api/auth/me:', JSON.stringify(me));
+              if (!me.user?.installationId) { console.error('FAIL: no installationId'); process.exit(1); }
+
+              console.log('Direct mock check:', JSON.stringify(await fetch('http://localhost:3101/health').then(r=>r.json())));
+
+              const repos = await fetch('http://localhost:3000/api/github/repos', { headers: { Cookie: cookie } });
+              const body = await repos.text();
+              console.log('/api/github/repos status:', repos.status, 'body:', body);
+              if (!repos.ok) { console.error('FAIL: repos endpoint returned', repos.status); process.exit(1); }
+            }
+            check().catch(e => { console.error('Error:', e); process.exit(1); });
           "
 
       - name: Run Playwright E2E tests
