@@ -112,6 +112,14 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+      - name: Show mock server logs on failure
+        if: failure()
+        run: |
+          echo "=== mock-github logs ==="
+          docker compose -f docker-compose.test.yml logs mock-github --tail=200 || true
+          echo "=== mock-llm logs ==="
+          docker compose -f docker-compose.test.yml logs mock-llm --tail=200 || true
+
       - name: Stop mock servers
         if: always()
         run: docker compose -f docker-compose.test.yml down

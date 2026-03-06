@@ -42,6 +42,10 @@ const server = createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const pathname = url.pathname;
 
+  // 요청 로깅
+  const ts = new Date().toISOString();
+  console.log(`[${ts}] ${req.method} ${req.url}`);
+
   // Health check
   if (req.method === "GET" && pathname === "/health") {
     return send(res, 200, { status: "ok", server: "mock-github" });
