@@ -13,18 +13,13 @@ async function globalSetup() {
   console.log(`[global-setup] CWD=${process.cwd()}`);
   try {
     await clearDatabase();
-    console.log("[global-setup] DB cleared");
-  } catch (err) {
-    console.warn("[global-setup] DB clear failed:", err);
-  }
-  try {
     const result = await seedDatabase();
     console.log(
       `[global-setup] DB seeded — user=${result.user.id}, installationId present`
     );
   } catch (err) {
-    // DB 접근 불가 환경(KIND cluster 등) — 시딩 건너뜀
-    console.warn("[global-setup] DB seeding failed:", err);
+    // CI에서는 seed-cli.ts로 이미 시딩됨, KIND cluster 등에서는 DB 접근 불가
+    console.warn("[global-setup] DB seeding skipped:", (err as Error).message);
   }
 }
 
