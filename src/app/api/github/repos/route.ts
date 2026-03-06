@@ -25,9 +25,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       { repositories: data.repositories },
       { status: 200 }
     );
-  } catch {
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("[/api/github/repos] error:", detail);
+    console.error("[/api/github/repos] GITHUB_API_URL:", process.env.GITHUB_API_URL);
     return NextResponse.json(
-      { error: "GitHub 레포 목록을 가져오는데 실패했습니다" },
+      { error: "GitHub 레포 목록을 가져오는데 실패했습니다", detail },
       { status: 500 }
     );
   }
