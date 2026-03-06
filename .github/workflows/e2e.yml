@@ -95,6 +95,22 @@ jobs:
             sleep 2
           done
 
+      - name: Verify seed data
+        run: |
+          echo "=== DB files ==="
+          find . -name "e2e-test.db" -not -path "*/node_modules/*" 2>/dev/null
+          echo "=== Seed check via API ==="
+          node -e "
+            const jwt = require('jsonwebtoken');
+            const token = jwt.sign({ userId: 'e2e-test-user-001', type: 'access' }, 'e2e-test-jwt-secret-local', { expiresIn: '15m' });
+            fetch('http://localhost:3000/api/auth/me', { headers: { Cookie: 'access_token=' + token } })
+              .then(r => r.json())
+              .then(d => console.log('API /auth/me:', JSON.stringify(d)))
+              .catch(e => console.error('API error:', e));
+          "
+        env:
+          DATABASE_URL: "file:./e2e-test.db"
+
       - name: Run Playwright E2E tests
         run: npx playwright test
         env:
