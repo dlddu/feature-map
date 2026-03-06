@@ -16,13 +16,11 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL ?? "file:./test.db",
-    },
-  },
-});
+// datasources override 없이 환경변수(DATABASE_URL)만 사용하여
+// Next.js 앱과 동일한 DB 파일을 참조하도록 합니다.
+// (override 사용 시 Prisma가 CWD 기준으로 경로를 resolve하여
+//  앱의 prisma/ 디렉토리 기준과 불일치할 수 있음)
+const prisma = new PrismaClient();
 
 export interface SeedResult {
   user: {

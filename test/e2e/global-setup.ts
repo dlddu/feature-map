@@ -9,16 +9,22 @@
 import { seedDatabase, clearDatabase } from "../helpers/seed";
 
 async function globalSetup() {
+  console.log(`[global-setup] DATABASE_URL=${process.env.DATABASE_URL}`);
+  console.log(`[global-setup] CWD=${process.cwd()}`);
   try {
     await clearDatabase();
-  } catch {
-    // DB 테이블이 아직 없는 경우(새 DB) — 무시하고 시딩 진행
+    console.log("[global-setup] DB cleared");
+  } catch (err) {
+    console.warn("[global-setup] DB clear failed:", err);
   }
   try {
-    await seedDatabase();
-  } catch {
+    const result = await seedDatabase();
+    console.log(
+      `[global-setup] DB seeded — user=${result.user.id}, installationId present`
+    );
+  } catch (err) {
     // DB 접근 불가 환경(KIND cluster 등) — 시딩 건너뜀
-    console.warn("[global-setup] DB seeding skipped (database not accessible)");
+    console.warn("[global-setup] DB seeding failed:", err);
   }
 }
 
