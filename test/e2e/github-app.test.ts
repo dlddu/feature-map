@@ -46,7 +46,7 @@ test.describe("설정 > GitHub 탭: GitHub App 설치 상태 표시", () => {
     ).toBeVisible();
 
     // Assert: 연결된 조직명(test-org)이 표시되어야 한다
-    await expect(page.getByText(/test-org/)).toBeVisible();
+    await expect(page.getByText("test-org", { exact: true })).toBeVisible();
   });
 
   // ---------------------------------------------------------------------------
@@ -144,10 +144,11 @@ test.describe('대시보드: "+ 레포 연결" 플로우로 레포 카드 표시
     ).toBeVisible();
 
     // Act: 미등록 레포(test-org/backend-service) 선택
-    await page.getByText("test-org/backend-service").click();
+    const sheet = page.locator("[data-testid='repo-select-sheet']");
+    await sheet.getByText("test-org/backend-service").click();
 
     // Act: 연결 확인 버튼 클릭
-    await page.getByRole("button", { name: /연결|확인|Connect/ }).click();
+    await sheet.getByRole("button", { name: /연결|확인|Connect/ }).click();
 
     // Assert: 대시보드에 새로 연결된 레포 카드가 표시되어야 한다
     await expect(page.getByText("test-org/backend-service")).toBeVisible();
@@ -176,10 +177,11 @@ test.describe('대시보드: "+ 레포 연결" 플로우로 레포 카드 표시
 
     // Assert: 이미 등록된 레포(test-org/sample-app)는 비활성화되거나
     //         "이미 연결됨" 표시가 있어야 한다
-    const alreadyConnectedRepo = page.getByText("test-org/sample-app");
+    const sheet = page.locator("[data-testid='repo-select-sheet']");
+    const alreadyConnectedRepo = sheet.getByText("test-org/sample-app");
     await expect(alreadyConnectedRepo).toBeVisible();
 
-    const repoItem = page.locator("[data-testid='repo-item']", {
+    const repoItem = sheet.locator("[data-testid='repo-item']", {
       has: page.getByText("test-org/sample-app"),
     });
     const isDisabled = await repoItem
