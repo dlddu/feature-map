@@ -32,6 +32,22 @@ export default function DashboardPage() {
   const [githubRepos, setGithubRepos] = useState<GithubRepo[]>([]);
   const [selectedRepo, setSelectedRepo] = useState<GithubRepo | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [installationId, setInstallationId] = useState<number | null>(null);
+
+  // 사용자 정보 조회 (installationId 포함)
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (!res.ok) return;
+        const data = await res.json();
+        setInstallationId(data.user?.installationId ?? null);
+      } catch {
+        // 사용자 정보 조회 실패 시 무시
+      }
+    }
+    fetchUser();
+  }, []);
 
   // 등록된 레포 목록 조회
   const fetchRegisteredRepos = useCallback(async () => {
@@ -82,7 +98,7 @@ export default function DashboardPage() {
   }
 
   async function handleConnect() {
-    if (!selectedRepo) return;
+    if (!selectedRepo || !installationId) return;
     setIsConnecting(true);
 
     try {
@@ -92,7 +108,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           githubRepoId: selectedRepo.id,
           fullName: selectedRepo.full_name,
-          installationId: 12345, // 사용자의 installationId - 실제 구현에서는 /api/auth/me에서 가져옴
+          installationId: installationId!,
           defaultBranch: selectedRepo.default_branch,
           cloneUrl: selectedRepo.clone_url,
         }),
