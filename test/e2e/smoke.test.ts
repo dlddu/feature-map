@@ -124,6 +124,41 @@ test.describe("Smoke Test: FeatureMap 전체 파이프라인", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Mock 서버 연동 확인
+  // ---------------------------------------------------------------------------
+
+  test("Mock GitHub 서버가 응답하고 레포 목록을 반환한다", async ({
+    request,
+  }) => {
+    // Arrange
+    const mockGithubUrl =
+      process.env.MOCK_GITHUB_URL ?? "http://localhost:3101";
+
+    // Act
+    const response = await request.get(`${mockGithubUrl}/health`);
+
+    // Assert
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body).toMatchObject({ status: "ok", server: "mock-github" });
+  });
+
+  test("Mock LLM 서버가 응답하고 OpenAI 호환 응답을 반환한다", async ({
+    request,
+  }) => {
+    // Arrange
+    const mockLlmUrl = process.env.MOCK_LLM_URL ?? "http://localhost:3102";
+
+    // Act
+    const response = await request.get(`${mockLlmUrl}/health`);
+
+    // Assert
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body).toMatchObject({ status: "ok", server: "mock-llm" });
+  });
+
+  // ---------------------------------------------------------------------------
   // Edge Case: 인증 없이 보호된 경로 접근
   // ---------------------------------------------------------------------------
 
