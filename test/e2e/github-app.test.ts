@@ -213,6 +213,15 @@ test.describe("GitHub App 접근 가능한 레포 목록 표시", () => {
   test("레포 목록 조회 중 오류가 발생하면 에러 메시지가 표시된다", async ({
     page,
   }) => {
+    // Arrange: 레포 목록 API를 mock하여 오류 응답 시뮬레이션
+    await page.route("/api/github/repos", async (route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Internal Server Error" }),
+      });
+    });
+
     // Act: 설정 페이지의 GitHub 탭으로 이동
     await page.goto("/settings/github");
 
