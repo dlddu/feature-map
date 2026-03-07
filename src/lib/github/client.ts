@@ -3,7 +3,7 @@ import { Octokit } from "@octokit/core";
 
 const GITHUB_APP_ID = process.env.GITHUB_APP_ID || "";
 const GITHUB_PRIVATE_KEY = process.env.GITHUB_PRIVATE_KEY || "";
-const GITHUB_API_URL = process.env.GITHUB_API_URL;
+const MOCK_GITHUB_API_URL = process.env.MOCK_GITHUB_API_URL;
 
 let app: App | null = null;
 
@@ -14,9 +14,9 @@ function getApp(): App {
       privateKey: GITHUB_PRIVATE_KEY,
     };
 
-    if (GITHUB_API_URL) {
+    if (MOCK_GITHUB_API_URL) {
       options.Octokit = Octokit.defaults({
-        baseUrl: `${GITHUB_API_URL}/api/v3`,
+        baseUrl: `${MOCK_GITHUB_API_URL}/api/v3`,
       });
     }
 
@@ -26,17 +26,17 @@ function getApp(): App {
 }
 
 export async function getInstallationOctokit(installationId: number) {
-  // Mock 환경: GITHUB_API_URL이 설정되면 @octokit/app의 JWT 서명을 우회하고
+  // Mock 환경: MOCK_GITHUB_API_URL이 설정되면 @octokit/app의 JWT 서명을 우회하고
   // mock 서버에서 직접 토큰을 발급받아 사용
-  if (GITHUB_API_URL) {
+  if (MOCK_GITHUB_API_URL) {
     const tokenRes = await fetch(
-      `${GITHUB_API_URL}/api/v3/app/installations/${installationId}/access_tokens`,
+      `${MOCK_GITHUB_API_URL}/api/v3/app/installations/${installationId}/access_tokens`,
       { method: "POST" }
     );
     const tokenData = await tokenRes.json();
     return new Octokit({
       auth: tokenData.token,
-      baseUrl: `${GITHUB_API_URL}/api/v3`,
+      baseUrl: `${MOCK_GITHUB_API_URL}/api/v3`,
     });
   }
 

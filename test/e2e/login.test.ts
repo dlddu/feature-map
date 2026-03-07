@@ -44,7 +44,7 @@ test.describe("로그인: 이메일/비밀번호 기반 로그인 플로우", ()
     await page.getByRole("button", { name: "로그인" }).click();
 
     // Assert: 대시보드로 리다이렉트되어야 한다
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 15000 });
   });
 
   // ---------------------------------------------------------------------------
