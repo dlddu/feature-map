@@ -16,6 +16,7 @@ const PUBLIC_PATHS = [
   "/api/auth/github",
   "/api/auth/test-login",
   "/api/health",
+  "/api/github/webhook",
 ];
 
 function isPublicPath(pathname: string): boolean {
