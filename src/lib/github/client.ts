@@ -26,6 +26,7 @@ export async function getInstallationOctokit(installationId: number) {
   // Mock 환경: GITHUB_API_URL이 설정되면 @octokit/app의 JWT 서명을 우회하고
   // mock 서버에서 직접 토큰을 발급받아 사용
   const apiUrl = process.env.GITHUB_API_URL;
+  console.log("[github/client] apiUrl:", apiUrl);
   if (apiUrl) {
     const tokenRes = await fetch(
       `${apiUrl}/api/v3/app/installations/${installationId}/access_tokens`,
