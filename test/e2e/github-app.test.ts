@@ -116,7 +116,7 @@ test.describe('대시보드: "+ 레포 연결" 플로우로 레포 카드 표시
     ).toBeVisible();
 
     // Act: 미등록 레포(test-org/backend-service) 선택
-    await page.getByText("test-org/backend-service").click();
+    await page.getByText("test-org/backend-service").first().click();
 
     // Act: 연결 확인 버튼 클릭
     const sheet = page.locator("[data-testid='repo-select-sheet']").or(page.getByRole("dialog"));
