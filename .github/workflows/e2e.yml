@@ -75,7 +75,16 @@ jobs:
           done
 
       - name: Start Next.js server
-        run: npm run build && npm run start > /tmp/nextjs.log 2>&1 &
+        run: |
+          echo "=== Environment variables ==="
+          echo "DATABASE_URL=$DATABASE_URL"
+          echo "GITHUB_API_URL=$GITHUB_API_URL"
+          echo "GITHUB_APP_ID=$GITHUB_APP_ID"
+          echo "OPENAI_BASE_URL=$OPENAI_BASE_URL"
+          echo "ANTHROPIC_BASE_URL=$ANTHROPIC_BASE_URL"
+          echo "NEXTAUTH_URL=$NEXTAUTH_URL"
+          echo "==============================="
+          npm run build && npm run start > /tmp/nextjs.log 2>&1 &
         env:
           DATABASE_URL: "file:./e2e-test.db"
           JWT_SECRET: "e2e-test-jwt-secret-local"
