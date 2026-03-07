@@ -86,25 +86,6 @@ test.describe("로그인: GitHub OAuth 로그인 플로우", () => {
   test("GitHub 로그인 버튼 클릭 후 OAuth 콜백이 완료되면 대시보드로 리다이렉트된다", async ({
     page,
   }) => {
-    // Arrange: GitHub OAuth 콜백 엔드포인트를 mock하여
-    //          실제 GitHub 인증 없이 인증 완료 상태를 시뮬레이션
-    await page.route("/api/auth/github/callback*", async (route) => {
-      // OAuth 콜백 성공 시 쿠키 설정 후 대시보드로 리다이렉트하는 응답 mock
-      // Playwright route.fulfill()이 Mobile Safari에서 302를 지원하지 않으므로
-      // 200 + meta refresh로 리다이렉트를 시뮬레이션
-      await route.fulfill({
-        status: 200,
-        headers: {
-          "Content-Type": "text/html",
-          "Set-Cookie": [
-            `access_token=mock-access-token; Path=/; HttpOnly`,
-            `refresh_token=mock-refresh-token; Path=/; HttpOnly`,
-          ].join(", "),
-        },
-        body: '<html><head><meta http-equiv="refresh" content="0;url=/dashboard"></head><body></body></html>',
-      });
-    });
-
     // Act: 로그인 페이지 진입 후 GitHub 로그인 버튼 클릭
     await page.goto("/login");
     await page.getByRole("button", { name: /GitHub로 로그인|GitHub/ }).click();

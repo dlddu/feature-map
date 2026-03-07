@@ -61,15 +61,6 @@ test.describe("설정 > GitHub 탭: GitHub App 설치 상태 표시", () => {
     //          (installationId가 없는 신규 유저 시뮬레이션)
     await context.clearCookies();
 
-    // GitHub App 설치 여부 API를 mock하여 미설치 상태 시뮬레이션
-    await page.route("/api/github/installation", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ installed: false, installationId: null }),
-      });
-    });
-
     const freshUserCookies = createAuthCookies("e2e-test-user-002", baseUrl);
     await context.addCookies(freshUserCookies);
 
@@ -112,25 +103,6 @@ test.describe('대시보드: "+ 레포 연결" 플로우로 레포 카드 표시
     //          반환하도록 설정되어 있음 (mock-server port 3101 또는 MOCK_GITHUB_URL)
     //          - test-org/sample-app은 이미 등록된 상태 (seed.ts 참고)
     //          - test-org/backend-service는 미등록 상태 (신규 연결 시나리오)
-
-    // 레포 등록 API를 mock하여 실제 DB 저장 없이 성공 응답 시뮬레이션
-    await page.route("/api/repos", async (route) => {
-      if (route.request().method() === "POST") {
-        await route.fulfill({
-          status: 201,
-          contentType: "application/json",
-          body: JSON.stringify({
-            id: "e2e-test-repo-002",
-            githubRepoId: 100002,
-            fullName: "test-org/backend-service",
-            defaultBranch: "main",
-            installationId: 12345,
-          }),
-        });
-      } else {
-        await route.continue();
-      }
-    });
 
     // Act: 대시보드 진입
     await page.goto("/dashboard");
@@ -241,15 +213,6 @@ test.describe("GitHub App 접근 가능한 레포 목록 표시", () => {
   test("레포 목록 조회 중 오류가 발생하면 에러 메시지가 표시된다", async ({
     page,
   }) => {
-    // Arrange: 레포 목록 API를 mock하여 오류 응답 시뮬레이션
-    await page.route("/api/github/repos", async (route) => {
-      await route.fulfill({
-        status: 500,
-        contentType: "application/json",
-        body: JSON.stringify({ error: "Internal Server Error" }),
-      });
-    });
-
     // Act: 설정 페이지의 GitHub 탭으로 이동
     await page.goto("/settings/github");
 
