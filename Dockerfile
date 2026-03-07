@@ -18,6 +18,15 @@ COPY --chown=nextjs:nodejs prisma ./prisma
 USER nextjs
 CMD ["npx", "prisma", "db", "push", "--skip-generate"]
 
+FROM node:22-alpine AS seeder
+WORKDIR /app
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 --ingroup nodejs nextjs
+COPY --chown=nextjs:nodejs --from=builder /app/node_modules ./node_modules
+COPY --chown=nextjs:nodejs prisma ./prisma
+COPY --chown=nextjs:nodejs test/kind/seed.mjs ./seed.mjs
+USER nextjs
+CMD ["node", "seed.mjs"]
+
 FROM node:22-alpine AS runner
 ENV NODE_ENV=production
 WORKDIR /app

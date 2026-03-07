@@ -158,6 +158,7 @@ jobs:
         run: |
           docker build --target runner -t featuremap:e2e .
           docker build --target migrator -t featuremap-migrator:e2e .
+          docker build --target seeder -t featuremap-seeder:e2e .
           docker build -f test/mock-servers/github/Dockerfile -t mock-github:e2e .
           docker build -f test/mock-servers/llm/Dockerfile -t mock-llm:e2e .
 
@@ -165,6 +166,7 @@ jobs:
         run: |
           kind load docker-image featuremap:e2e --name featuremap-e2e
           kind load docker-image featuremap-migrator:e2e --name featuremap-e2e
+          kind load docker-image featuremap-seeder:e2e --name featuremap-e2e
           kind load docker-image mock-github:e2e --name featuremap-e2e
           kind load docker-image mock-llm:e2e --name featuremap-e2e
 

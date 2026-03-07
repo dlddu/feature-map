@@ -16,6 +16,22 @@
     - secretRef:
         name: featuremap-secrets
 
+# --- initContainers[1]: db-seed ---
+- op: add
+  path: /spec/template/spec/initContainers/-
+  value:
+    name: db-seed
+    image: featuremap-seeder:e2e
+    imagePullPolicy: Never
+    volumeMounts:
+      - name: data
+        mountPath: /app/data
+    envFrom:
+      - configMapRef:
+          name: featuremap-e2e-env
+      - secretRef:
+          name: featuremap-secrets
+
 # --- containers[0]: featuremap ---
 - op: replace
   path: /spec/template/spec/containers/0/image
