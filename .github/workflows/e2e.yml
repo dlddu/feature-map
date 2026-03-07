@@ -75,7 +75,7 @@ jobs:
           done
 
       - name: Start Next.js server
-        run: npm run build && npm run start &
+        run: npm run build && npm run start > /tmp/nextjs.log 2>&1 &
         env:
           DATABASE_URL: "file:./e2e-test.db"
           JWT_SECRET: "e2e-test-jwt-secret-local"
@@ -121,6 +121,10 @@ jobs:
             check().catch(e => { console.error('Error:', e); process.exit(1); });
           "
 
+      - name: Show Next.js server logs (after verify)
+        if: always()
+        run: cat /tmp/nextjs.log || true
+
       - name: Run Playwright E2E tests
         run: npx playwright test
         env:
@@ -137,6 +141,12 @@ jobs:
           name: playwright-report-local
           path: playwright-report/
           retention-days: 7
+
+      - name: Show Next.js server logs on failure
+        if: failure()
+        run: |
+          echo "=== Next.js server logs ==="
+          cat /tmp/nextjs.log || true
 
       - name: Show mock server logs on failure
         if: failure()
