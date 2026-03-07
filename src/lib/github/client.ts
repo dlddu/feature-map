@@ -8,6 +8,12 @@ function getApp(): App {
     const options: ConstructorParameters<typeof App>[0] = {
       appId: process.env.GITHUB_APP_ID || "",
       privateKey: process.env.GITHUB_PRIVATE_KEY || "",
+      log: {
+        debug: (msg: string) => console.log("[octokit:debug]", msg),
+        info: (msg: string) => console.log("[octokit:info]", msg),
+        warn: (msg: string) => console.warn("[octokit:warn]", msg),
+        error: (msg: string) => console.error("[octokit:error]", msg),
+      },
     };
 
     const apiUrl = process.env.GITHUB_API_URL;
@@ -28,14 +34,24 @@ export async function getInstallationOctokit(installationId: number) {
   const apiUrl = process.env.GITHUB_API_URL;
   console.log("[github/client] apiUrl:", apiUrl);
   if (apiUrl) {
+    console.log(
+      `[github/client] mock mode — fetching token from ${apiUrl}/api/v3/app/installations/${installationId}/access_tokens`
+    );
     const tokenRes = await fetch(
       `${apiUrl}/api/v3/app/installations/${installationId}/access_tokens`,
       { method: "POST" }
     );
     const tokenData = await tokenRes.json();
+    console.log("[github/client] mock token response:", JSON.stringify(tokenData));
     return new Octokit({
       auth: tokenData.token,
       baseUrl: `${apiUrl}/api/v3`,
+      log: {
+        debug: (msg: string) => console.log("[octokit:debug]", msg),
+        info: (msg: string) => console.log("[octokit:info]", msg),
+        warn: (msg: string) => console.warn("[octokit:warn]", msg),
+        error: (msg: string) => console.error("[octokit:error]", msg),
+      },
     });
   }
 
