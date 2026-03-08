@@ -21,10 +21,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 
-  // code 없으면 GitHub OAuth authorize 페이지로 리다이렉트
+  // code 없으면 GitHub OAuth authorize 요청을 서버 사이드로 수행
   if (!code) {
     const redirectUri = new URL("/api/auth/github/callback", request.url).toString();
     const authorizeUrl = `${GITHUB_BASE_URL}/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user,user:email`;
+
+    try {
+      const authorizeRes = await fetch(authorizeUrl, { redirect: "manual" });
+      const location = authorizeRes.headers.get("location");
+
+      if (location) {
+        // authorize 엔드포인트가 리다이렉트를 반환한 경우 브라우저를 해당 URL로 전달
+        // - Mock 서버: redirect_uri?code=... 로 바로 리다이렉트
+        // - GitHub: 로그인 페이지 또는 redirect_uri?code=... 로 리다이렉트
+        return NextResponse.redirect(location, { status: 302 });
+      }
+    } catch {
+      // 서버 사이드 authorize 요청 실패 시 브라우저 리다이렉트로 폴백
+    }
+
     return NextResponse.redirect(authorizeUrl, { status: 302 });
   }
 
