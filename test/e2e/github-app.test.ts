@@ -13,7 +13,6 @@
 
 import { test, expect } from "@playwright/test";
 import { createAuthCookies } from "../helpers/auth";
-import { prisma } from "../helpers/seed";
 
 // ---------------------------------------------------------------------------
 // 설정 > GitHub 탭: App 설치 상태 확인
@@ -87,16 +86,27 @@ test.describe("설정 > GitHub 탭: GitHub App 설치 상태 표시", () => {
 test.describe('대시보드: "+ 레포 연결" 플로우로 레포 카드 표시', () => {
   const baseUrl = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 
-  test.beforeEach(async ({ context }) => {
-    // Arrange: 다른 프로젝트(desktop/mobile)가 병렬로 등록한 backend-service를 삭제하여
-    //          시드 상태(sample-app만 등록)를 복원
-    await prisma.repo.deleteMany({
-      where: { fullName: "test-org/backend-service" },
-    });
-
+  test.beforeEach(async ({ context, request }) => {
     // Arrange: 시드 유저(e2e-test-user-001)의 인증 쿠키 설정
     const cookies = createAuthCookies("e2e-test-user-001", baseUrl);
     await context.addCookies(cookies);
+
+    // Arrange: 다른 프로젝트(desktop/mobile)가 병렬로 등록한 backend-service를 삭제하여
+    //          시드 상태(sample-app만 등록)를 복원
+    const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+    const reposRes = await request.get(`${baseUrl}/api/repos`, {
+      headers: { cookie: cookieHeader },
+    });
+    if (reposRes.ok()) {
+      const { repos } = await reposRes.json();
+      for (const repo of repos) {
+        if (repo.fullName === "test-org/backend-service") {
+          await request.delete(`${baseUrl}/api/repos/${repo.id}`, {
+            headers: { cookie: cookieHeader },
+          });
+        }
+      }
+    }
   });
 
   // ---------------------------------------------------------------------------
