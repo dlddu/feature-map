@@ -44,11 +44,6 @@ jest.mock("@/lib/auth/jwt", () => ({
   verifyToken: jest.fn(),
 }));
 
-jest.mock("@/lib/http/redirect", () => ({
-  __esModule: true,
-  getRedirectLocation: jest.fn(),
-}));
-
 // ---------------------------------------------------------------------------
 // Imports
 // ---------------------------------------------------------------------------
@@ -56,7 +51,6 @@ jest.mock("@/lib/http/redirect", () => ({
 import { GET } from "@/app/api/auth/github/callback/route";
 import { prisma } from "@/lib/db/client";
 import { generateAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
-import { getRedirectLocation } from "@/lib/http/redirect";
 
 // ---------------------------------------------------------------------------
 // 타입 헬퍼
@@ -67,7 +61,6 @@ const mockPrismaUser = prisma.user as unknown as {
 };
 const mockGenerateAccessToken = generateAccessToken as jest.Mock;
 const mockGenerateRefreshToken = generateRefreshToken as jest.Mock;
-const mockGetRedirectLocation = getRedirectLocation as jest.Mock;
 
 // ---------------------------------------------------------------------------
 // 테스트 픽스처
@@ -191,17 +184,6 @@ describe("GET /api/auth/github/callback", () => {
     mockPrismaUser.upsert.mockResolvedValue(MOCK_DB_USER);
     mockGenerateAccessToken.mockReturnValue(MOCK_ACCESS_TOKEN);
     mockGenerateRefreshToken.mockReturnValue(MOCK_REFRESH_TOKEN);
-    // getRedirectLocation mock: authorize 엔드포인트가 callback?code=... 로 리다이렉트
-    mockGetRedirectLocation.mockImplementation((url: string) => {
-      const parsedUrl = new URL(url);
-      const redirectUri = parsedUrl.searchParams.get("redirect_uri");
-      if (redirectUri) {
-        return Promise.resolve(
-          `${redirectUri}${redirectUri.includes("?") ? "&" : "?"}code=mock-oauth-code`
-        );
-      }
-      return Promise.resolve(null);
-    });
   });
 
   afterEach(() => {
@@ -347,7 +329,7 @@ describe("GET /api/auth/github/callback", () => {
   // -------------------------------------------------------------------------
 
   describe("에러 케이스", () => {
-    it("code 파라미터가 없으면 서버 사이드 authorize 후 콜백 URL로 리다이렉트한다", async () => {
+    it("code 파라미터가 없으면 GitHub authorize URL로 리다이렉트한다", async () => {
       // Arrange
       const request = makeRequest(null);
 
@@ -355,10 +337,10 @@ describe("GET /api/auth/github/callback", () => {
       const response = await GET(request);
       const location = response.headers.get("location");
 
-      // Assert — 서버가 authorize 엔드포인트를 호출하여 받은 redirect로 브라우저 전달
+      // Assert — GitHub OAuth authorize 페이지로 리다이렉트
       expect(response.status).toBe(302);
-      expect(location).toContain("/api/auth/github/callback");
-      expect(location).toContain("code=");
+      expect(location).toContain("/login/oauth/authorize");
+      expect(location).toContain("client_id=");
     });
 
     it("GitHub token 교환 실패 시 302 리다이렉트로 /login?error=github_auth_failed로 이동한다", async () => {

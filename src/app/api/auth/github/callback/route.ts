@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/client";
 import { generateAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
-import { getRedirectLocation } from "@/lib/http/redirect";
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || "";
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || "";
@@ -22,22 +21,27 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 
-  // code 없으면 GitHub OAuth authorize 요청을 서버 사이드로 수행
+  // code 없으면 GitHub OAuth authorize로 리다이렉트
   if (!code) {
     const redirectUri = new URL("/api/auth/github/callback", request.url).toString();
     const authorizeUrl = `${GITHUB_BASE_URL}/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user,user:email`;
 
-    // 서버 사이드로 authorize 엔드포인트의 리다이렉트 Location을 확인
-    // - Mock 서버: redirect_uri?code=... 로 바로 리다이렉트 → 브라우저에 전달
-    // - GitHub: 로그인 페이지로 리다이렉트 → 브라우저에 전달
-    // - 실패 시: 브라우저를 authorize URL로 직접 리다이렉트 (폴백)
-    try {
-      const location = await getRedirectLocation(authorizeUrl);
-      if (location) {
-        return NextResponse.redirect(location, { status: 302 });
+    // Mock 서버 사용 시: mock authorize 엔드포인트는 항상 redirect_uri?code=...로
+    // 302 리다이렉트하므로, 서버 사이드에서 직접 리다이렉트 URL을 구성한다.
+    // 브라우저가 docker 네트워크의 mock 서버에 직접 접근할 수 없기 때문에
+    // 서버에서 프록시 역할을 수행한다.
+    if (process.env.MOCK_GITHUB_API_URL) {
+      try {
+        const mockAuthorizeUrl = new URL(authorizeUrl);
+        const mockRedirectUri = mockAuthorizeUrl.searchParams.get("redirect_uri");
+        if (mockRedirectUri) {
+          const separator = mockRedirectUri.includes("?") ? "&" : "?";
+          const callbackWithCode = `${mockRedirectUri}${separator}code=mock-oauth-code`;
+          return NextResponse.redirect(callbackWithCode, { status: 302 });
+        }
+      } catch {
+        // URL 파싱 실패 시 폴백
       }
-    } catch {
-      // 서버 사이드 authorize 요청 실패 시 브라우저 리다이렉트로 폴백
     }
 
     return NextResponse.redirect(authorizeUrl, { status: 302 });
