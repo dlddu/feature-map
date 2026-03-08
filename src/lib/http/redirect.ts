@@ -1,25 +1,22 @@
-import http from "node:http";
-import https from "node:https";
-
 /**
  * HTTP(S) GET 요청의 리다이렉트 Location 헤더를 추출합니다.
- * Node.js http/https 모듈을 직접 사용하여 Next.js fetch 패칭 영향을 받지 않습니다.
+ * fetch + redirect:"manual" + cache:"no-store" 조합으로
+ * Next.js fetch 캐싱을 우회하면서 리다이렉트 응답을 직접 처리합니다.
  */
-export function getRedirectLocation(url: string): Promise<string | null> {
-  return new Promise((resolve) => {
-    const client = url.startsWith("https") ? https : http;
-    const req = client.get(url, (res) => {
-      res.resume();
-      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400) {
-        resolve(res.headers.location ?? null);
-      } else {
-        resolve(null);
-      }
+export async function getRedirectLocation(
+  url: string
+): Promise<string | null> {
+  try {
+    const response = await fetch(url, {
+      redirect: "manual",
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
     });
-    req.on("error", () => resolve(null));
-    req.setTimeout(5000, () => {
-      req.destroy();
-      resolve(null);
-    });
-  });
+    if (response.status >= 300 && response.status < 400) {
+      return response.headers.get("location");
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }

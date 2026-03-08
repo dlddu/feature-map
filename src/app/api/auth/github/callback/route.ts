@@ -31,9 +31,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // - Mock 서버: redirect_uri?code=... 로 바로 리다이렉트 → 브라우저에 전달
     // - GitHub: 로그인 페이지로 리다이렉트 → 브라우저에 전달
     // - 실패 시: 브라우저를 authorize URL로 직접 리다이렉트 (폴백)
-    const location = await getRedirectLocation(authorizeUrl);
-    if (location) {
-      return NextResponse.redirect(location, { status: 302 });
+    try {
+      const location = await getRedirectLocation(authorizeUrl);
+      if (location) {
+        return NextResponse.redirect(location, { status: 302 });
+      }
+    } catch {
+      // 서버 사이드 authorize 요청 실패 시 브라우저 리다이렉트로 폴백
     }
 
     return NextResponse.redirect(authorizeUrl, { status: 302 });
