@@ -38,35 +38,6 @@ test.describe("설정 > LLM 탭: API Key 등록 및 상태 표시", () => {
   }) => {
     test.skip(true, "LLM 설정 페이지(/settings/llm) 미구현 — 페이지 완성 후 활성화 (DLD-617)");
 
-    // Arrange: API Key 등록 API를 mock하여 실제 암호화 저장 없이 성공 응답 시뮬레이션
-    await page.route("/api/settings/llm/api-keys", async (route) => {
-      if (route.request().method() === "POST") {
-        await route.fulfill({
-          status: 201,
-          contentType: "application/json",
-          body: JSON.stringify({
-            id: "e2e-test-apikey-001",
-            userId: "e2e-test-user-001",
-            provider: "openai",
-            label: "OpenAI Key",
-            maskedKey: "sk-...1234",
-            isActive: true,
-          }),
-        });
-      } else {
-        await route.continue();
-      }
-    });
-
-    // Arrange: API Key 목록 조회 API를 mock (등록 전 상태: OpenAI 미등록)
-    await page.route("/api/settings/llm/api-keys?provider=openai", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify([]),
-      });
-    });
-
     // Act: LLM 설정 탭으로 이동
     await page.goto("/settings/llm");
 
@@ -132,42 +103,6 @@ test.describe("설정 > LLM 탭: 등록된 API Key 변경", () => {
   }) => {
     test.skip(true, "LLM 설정 페이지(/settings/llm) 미구현 — 페이지 완성 후 활성화 (DLD-617)");
 
-    // Arrange: 이미 등록된 API Key 목록 조회 mock (OpenAI 등록됨 상태)
-    await page.route("/api/settings/llm/api-keys", async (route) => {
-      if (route.request().method() === "GET") {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify([
-            {
-              id: "e2e-test-apikey-001",
-              userId: "e2e-test-user-001",
-              provider: "openai",
-              label: "OpenAI Key",
-              maskedKey: "sk-...7x3f",
-              isActive: true,
-            },
-          ]),
-        });
-      } else if (route.request().method() === "PUT" || route.request().method() === "PATCH") {
-        // Arrange: API Key 변경 API mock — 갱신된 마스킹 키 반환
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            id: "e2e-test-apikey-001",
-            userId: "e2e-test-user-001",
-            provider: "openai",
-            label: "OpenAI Key",
-            maskedKey: "sk-...9z2k",
-            isActive: true,
-          }),
-        });
-      } else {
-        await route.continue();
-      }
-    });
-
     // Act: LLM 설정 탭으로 이동
     await page.goto("/settings/llm");
 
@@ -229,41 +164,6 @@ test.describe("설정 > LLM 탭: 기능별 모델 변경 및 저장 토스트", 
     page,
   }) => {
     test.skip(true, "LLM 설정 페이지(/settings/llm) 미구현 — 페이지 완성 후 활성화 (DLD-617)");
-
-    // Arrange: LLM 설정 조회 API mock — F1 기능의 현재 모델은 gpt-4o
-    await page.route("/api/settings/llm/config", async (route) => {
-      if (route.request().method() === "GET") {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify([
-            { id: "cfg-f1", userId: "e2e-test-user-001", featureType: "f1", provider: "openai", model: "gpt-4o", temperature: 0.7, maxTokens: 4096 },
-            { id: "cfg-f2", userId: "e2e-test-user-001", featureType: "f2", provider: "openai", model: "gpt-4o", temperature: 0.7, maxTokens: 4096 },
-            { id: "cfg-f3", userId: "e2e-test-user-001", featureType: "f3", provider: "openai", model: "gpt-4o", temperature: 0.7, maxTokens: 4096 },
-            { id: "cfg-f4", userId: "e2e-test-user-001", featureType: "f4", provider: "openai", model: "gpt-4o", temperature: 0.7, maxTokens: 4096 },
-            { id: "cfg-f5", userId: "e2e-test-user-001", featureType: "f5", provider: "openai", model: "gpt-4o", temperature: 0.7, maxTokens: 4096 },
-            { id: "cfg-f6", userId: "e2e-test-user-001", featureType: "f6", provider: "openai", model: "gpt-4o", temperature: 0.7, maxTokens: 4096 },
-          ]),
-        });
-      } else if (route.request().method() === "PUT" || route.request().method() === "PATCH") {
-        // Arrange: 모델 변경 저장 API mock — 즉시 저장 성공 응답
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            id: "cfg-f1",
-            userId: "e2e-test-user-001",
-            featureType: "f1",
-            provider: "anthropic",
-            model: "claude-3-5-sonnet-20241022",
-            temperature: 0.7,
-            maxTokens: 4096,
-          }),
-        });
-      } else {
-        await route.continue();
-      }
-    });
 
     // Act: LLM 설정 탭으로 이동
     await page.goto("/settings/llm");

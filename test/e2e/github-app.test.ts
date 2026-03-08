@@ -61,15 +61,6 @@ test.describe("설정 > GitHub 탭: GitHub App 설치 상태 표시", () => {
     //          (installationId가 없는 신규 유저 시뮬레이션)
     await context.clearCookies();
 
-    // GitHub App 설치 여부 API를 mock하여 미설치 상태 시뮬레이션
-    await page.route("/api/github/installation", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ installed: false, installationId: null }),
-      });
-    });
-
     const freshUserCookies = createAuthCookies("e2e-test-user-002", baseUrl);
     await context.addCookies(freshUserCookies);
 
@@ -95,10 +86,27 @@ test.describe("설정 > GitHub 탭: GitHub App 설치 상태 표시", () => {
 test.describe('대시보드: "+ 레포 연결" 플로우로 레포 카드 표시', () => {
   const baseUrl = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 
-  test.beforeEach(async ({ context }) => {
+  test.beforeEach(async ({ context, request }) => {
     // Arrange: 시드 유저(e2e-test-user-001)의 인증 쿠키 설정
     const cookies = createAuthCookies("e2e-test-user-001", baseUrl);
     await context.addCookies(cookies);
+
+    // Arrange: 다른 프로젝트(desktop/mobile)가 병렬로 등록한 backend-service를 삭제하여
+    //          시드 상태(sample-app만 등록)를 복원
+    const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+    const reposRes = await request.get(`${baseUrl}/api/repos`, {
+      headers: { cookie: cookieHeader },
+    });
+    if (reposRes.ok()) {
+      const { repos } = await reposRes.json();
+      for (const repo of repos) {
+        if (repo.fullName === "test-org/backend-service") {
+          await request.delete(`${baseUrl}/api/repos/${repo.id}`, {
+            headers: { cookie: cookieHeader },
+          });
+        }
+      }
+    }
   });
 
   // ---------------------------------------------------------------------------
@@ -113,25 +121,6 @@ test.describe('대시보드: "+ 레포 연결" 플로우로 레포 카드 표시
     //          - test-org/sample-app은 이미 등록된 상태 (seed.ts 참고)
     //          - test-org/backend-service는 미등록 상태 (신규 연결 시나리오)
 
-    // 레포 등록 API를 mock하여 실제 DB 저장 없이 성공 응답 시뮬레이션
-    await page.route("/api/repos", async (route) => {
-      if (route.request().method() === "POST") {
-        await route.fulfill({
-          status: 201,
-          contentType: "application/json",
-          body: JSON.stringify({
-            id: "e2e-test-repo-002",
-            githubRepoId: 100002,
-            fullName: "test-org/backend-service",
-            defaultBranch: "main",
-            installationId: 12345,
-          }),
-        });
-      } else {
-        await route.continue();
-      }
-    });
-
     // Act: 대시보드 진입
     await page.goto("/dashboard");
 
@@ -144,7 +133,7 @@ test.describe('대시보드: "+ 레포 연결" 플로우로 레포 카드 표시
     ).toBeVisible();
 
     // Act: 미등록 레포(test-org/backend-service) 선택
-    await page.getByText("test-org/backend-service").click();
+    await page.getByText("test-org/backend-service").first().click();
 
     // Act: 연결 확인 버튼 클릭
     const sheet = page.locator("[data-testid='repo-select-sheet']").or(page.getByRole("dialog"));

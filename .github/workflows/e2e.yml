@@ -77,6 +77,8 @@ jobs:
           NEXTAUTH_URL: "http://localhost:3000"
           NEXTAUTH_SECRET: "e2e-test-nextauth-secret"
           GITHUB_APP_ID: "12345"
+          GITHUB_CLIENT_ID: "mock-github-client-id"
+          GITHUB_CLIENT_SECRET: "mock-github-client-secret"
           GITHUB_PRIVATE_KEY: "mock-private-key"
           OPENAI_API_KEY: "mock-openai-key"
           ANTHROPIC_API_KEY: "mock-anthropic-key"
