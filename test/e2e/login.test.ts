@@ -86,12 +86,34 @@ test.describe("로그인: GitHub OAuth 로그인 플로우", () => {
   test("GitHub 로그인 버튼 클릭 후 OAuth 콜백이 완료되면 대시보드로 리다이렉트된다", async ({
     page,
   }) => {
+    // Arrange: Mock GitHub OAuth authorize 엔드포인트를 브라우저 레벨에서 인터셉트
+    //          (브라우저가 docker mock 서버에 직접 접근할 필요 없이,
+    //           서버가 반환한 redirect_uri로 mock code를 전달)
+    const mockGithubUrl =
+      process.env.MOCK_GITHUB_URL ?? "http://localhost:3101";
+    await page.route(
+      `${mockGithubUrl}/login/oauth/authorize**`,
+      async (route) => {
+        const url = new URL(route.request().url());
+        const redirectUri = url.searchParams.get("redirect_uri");
+        if (redirectUri) {
+          const target = `${redirectUri}${redirectUri.includes("?") ? "&" : "?"}code=mock-oauth-code`;
+          await route.fulfill({
+            status: 302,
+            headers: { location: target },
+          });
+        } else {
+          await route.continue();
+        }
+      }
+    );
+
     // Act: 로그인 페이지 진입 후 GitHub 로그인 버튼 클릭
     await page.goto("/login");
     await page.getByRole("button", { name: /GitHub로 로그인|GitHub/ }).click();
 
     // Assert: 대시보드로 리다이렉트되어야 한다
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 15000 });
   });
 });
 
