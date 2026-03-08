@@ -3,6 +3,8 @@
  *
  * 지원 엔드포인트:
  * - GET /health
+ * - POST /login/oauth/access_token - OAuth 토큰 교환
+ * - GET /api/v3/user - 인증된 유저 정보
  * - GET /api/v3/installation/repositories - 레포 목록
  * - GET /api/v3/repos/:owner/:repo/git/trees/:sha - 파일 트리
  * - GET /api/v3/repos/:owner/:repo/git/blobs/:sha - 파일 내용
@@ -45,6 +47,36 @@ const server = createServer((req, res) => {
   // Health check
   if (req.method === "GET" && pathname === "/health") {
     return send(res, 200, { status: "ok", server: "mock-github" });
+  }
+
+  // OAuth authorize (GitHub OAuth 로그인 시작 → callback으로 mock code 전달)
+  if (req.method === "GET" && pathname === "/login/oauth/authorize") {
+    const redirectUri = url.searchParams.get("redirect_uri");
+    const target = redirectUri
+      ? `${redirectUri}${redirectUri.includes("?") ? "&" : "?"}code=mock-oauth-code`
+      : "/";
+    res.writeHead(302, { Location: target });
+    return res.end();
+  }
+
+  // OAuth access token 교환 (GitHub OAuth 로그인용)
+  if (req.method === "POST" && pathname === "/login/oauth/access_token") {
+    return send(res, 200, {
+      access_token: "mock-github-oauth-token",
+      token_type: "bearer",
+      scope: "read:user,user:email",
+    });
+  }
+
+  // 인증된 유저 정보 (OAuth 로그인 후 유저 조회)
+  if (req.method === "GET" && pathname === "/api/v3/user") {
+    return send(res, 200, {
+      id: 12345,
+      login: "e2e-test-user",
+      name: "E2E Test User",
+      email: "e2e@test.com",
+      avatar_url: "https://avatars.githubusercontent.com/u/12345",
+    });
   }
 
   // Installation access token (GitHub App 인증용)
