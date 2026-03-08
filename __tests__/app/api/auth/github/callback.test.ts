@@ -44,6 +44,11 @@ jest.mock("@/lib/auth/jwt", () => ({
   verifyToken: jest.fn(),
 }));
 
+jest.mock("@/lib/http/redirect", () => ({
+  __esModule: true,
+  getRedirectLocation: jest.fn(),
+}));
+
 // ---------------------------------------------------------------------------
 // Imports
 // ---------------------------------------------------------------------------
@@ -51,6 +56,7 @@ jest.mock("@/lib/auth/jwt", () => ({
 import { GET } from "@/app/api/auth/github/callback/route";
 import { prisma } from "@/lib/db/client";
 import { generateAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
+import { getRedirectLocation } from "@/lib/http/redirect";
 
 // ---------------------------------------------------------------------------
 // 타입 헬퍼
@@ -61,6 +67,7 @@ const mockPrismaUser = prisma.user as unknown as {
 };
 const mockGenerateAccessToken = generateAccessToken as jest.Mock;
 const mockGenerateRefreshToken = generateRefreshToken as jest.Mock;
+const mockGetRedirectLocation = getRedirectLocation as jest.Mock;
 
 // ---------------------------------------------------------------------------
 // 테스트 픽스처
@@ -110,23 +117,6 @@ function makeRequest(code: string | null): NextRequest {
 
 function mockFetchSuccess(): void {
   global.fetch = jest.fn().mockImplementation((url: string, options?: RequestInit) => {
-    // GitHub OAuth authorize 엔드포인트 (서버 사이드 authorize 요청)
-    if (
-      typeof url === "string" &&
-      url.includes("/login/oauth/authorize")
-    ) {
-      const parsedUrl = new URL(url);
-      const redirectUri = parsedUrl.searchParams.get("redirect_uri");
-      const target = redirectUri
-        ? `${redirectUri}${redirectUri.includes("?") ? "&" : "?"}code=mock-oauth-code`
-        : "/";
-      return Promise.resolve({
-        ok: false,
-        status: 302,
-        headers: new Headers({ location: target }),
-      } as Response);
-    }
-
     // GitHub token 교환 엔드포인트
     if (
       typeof url === "string" &&
@@ -162,43 +152,12 @@ function mockFetchTokenFailure(): void {
         json: () => Promise.resolve({ error: "bad_verification_code" }),
       } as Response);
     }
-    if (
-      typeof url === "string" &&
-      url.includes("/login/oauth/authorize")
-    ) {
-      const parsedUrl = new URL(url);
-      const redirectUri = parsedUrl.searchParams.get("redirect_uri");
-      const target = redirectUri
-        ? `${redirectUri}${redirectUri.includes("?") ? "&" : "?"}code=mock-oauth-code`
-        : "/";
-      return Promise.resolve({
-        ok: false,
-        status: 302,
-        headers: new Headers({ location: target }),
-      } as Response);
-    }
     return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
   });
 }
 
 function mockFetchUserInfoFailure(): void {
   global.fetch = jest.fn().mockImplementation((url: string) => {
-    if (
-      typeof url === "string" &&
-      url.includes("/login/oauth/authorize")
-    ) {
-      const parsedUrl = new URL(url);
-      const redirectUri = parsedUrl.searchParams.get("redirect_uri");
-      const target = redirectUri
-        ? `${redirectUri}${redirectUri.includes("?") ? "&" : "?"}code=mock-oauth-code`
-        : "/";
-      return Promise.resolve({
-        ok: false,
-        status: 302,
-        headers: new Headers({ location: target }),
-      } as Response);
-    }
-
     if (
       typeof url === "string" &&
       url.includes("github.com/login/oauth/access_token")
@@ -232,6 +191,17 @@ describe("GET /api/auth/github/callback", () => {
     mockPrismaUser.upsert.mockResolvedValue(MOCK_DB_USER);
     mockGenerateAccessToken.mockReturnValue(MOCK_ACCESS_TOKEN);
     mockGenerateRefreshToken.mockReturnValue(MOCK_REFRESH_TOKEN);
+    // getRedirectLocation mock: authorize 엔드포인트가 callback?code=... 로 리다이렉트
+    mockGetRedirectLocation.mockImplementation((url: string) => {
+      const parsedUrl = new URL(url);
+      const redirectUri = parsedUrl.searchParams.get("redirect_uri");
+      if (redirectUri) {
+        return Promise.resolve(
+          `${redirectUri}${redirectUri.includes("?") ? "&" : "?"}code=mock-oauth-code`
+        );
+      }
+      return Promise.resolve(null);
+    });
   });
 
   afterEach(() => {
