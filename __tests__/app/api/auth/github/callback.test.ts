@@ -329,7 +329,7 @@ describe("GET /api/auth/github/callback", () => {
   // -------------------------------------------------------------------------
 
   describe("에러 케이스", () => {
-    it("code 파라미터가 없으면 302 리다이렉트로 /login?error=missing_code로 이동한다", async () => {
+    it("code 파라미터가 없으면 302 리다이렉트로 GitHub OAuth authorize 페이지로 이동한다", async () => {
       // Arrange
       const request = makeRequest(null);
 
@@ -339,8 +339,7 @@ describe("GET /api/auth/github/callback", () => {
 
       // Assert
       expect(response.status).toBe(302);
-      expect(location).toContain("/login");
-      expect(location).toContain("error=missing_code");
+      expect(location).toContain("/login/oauth/authorize");
     });
 
     it("GitHub token 교환 실패 시 302 리다이렉트로 /login?error=github_auth_failed로 이동한다", async () => {
