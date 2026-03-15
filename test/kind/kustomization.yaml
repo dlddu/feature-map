@@ -41,6 +41,7 @@ secretGenerator:
     literals:
       - JWT_SECRET=e2e-test-jwt-secret-kind-cluster
       - NEXTAUTH_SECRET=e2e-test-nextauth-secret
+      - ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000001
       - GITHUB_APP_ID=12345
       - GITHUB_PRIVATE_KEY=mock-private-key
       - OPENAI_API_KEY=mock-openai-key
