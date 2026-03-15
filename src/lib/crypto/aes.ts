@@ -1,13 +1,12 @@
 import crypto from "crypto";
 
 // ENCRYPTION_KEY: 32 bytes = 64 hex chars
-// Fallback dev key (not for production use)
-const ENCRYPTION_KEY =
-  process.env.ENCRYPTION_KEY ||
-  "0000000000000000000000000000000000000000000000000000000000000001";
-
 function getKeyBuffer(): Buffer {
-  const key = Buffer.from(ENCRYPTION_KEY, "hex");
+  const envKey = process.env.ENCRYPTION_KEY;
+  if (!envKey) {
+    throw new Error("ENCRYPTION_KEY environment variable is required");
+  }
+  const key = Buffer.from(envKey, "hex");
   if (key.length !== 32) {
     throw new Error("ENCRYPTION_KEY must be 32 bytes (64 hex characters)");
   }

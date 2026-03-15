@@ -34,15 +34,26 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   // 각 키 복호화 후 마스킹
   const apiKeys = keys.map((k) => {
-    const decryptedKey = decrypt(k.encryptedKey);
-    const maskedKey = maskApiKey(decryptedKey);
-    return {
-      id: k.id,
-      provider: k.provider,
-      maskedKey,
-      label: k.label,
-      isActive: k.isActive,
-    };
+    try {
+      const decryptedKey = decrypt(k.encryptedKey);
+      const maskedKey = maskApiKey(decryptedKey);
+      return {
+        id: k.id,
+        provider: k.provider,
+        maskedKey,
+        label: k.label,
+        isActive: k.isActive,
+      };
+    } catch {
+      return {
+        id: k.id,
+        provider: k.provider,
+        maskedKey: "sk-...****",
+        label: k.label,
+        isActive: k.isActive,
+        error: "복호화 실패",
+      };
+    }
   });
 
   return NextResponse.json({ apiKeys });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { OPENAI_MODELS, ANTHROPIC_MODELS } from "@/lib/constants/llm-models";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -38,19 +39,8 @@ const FEATURE_TYPES = [
   { id: "report-generation", label: "F6: Report Generation", selectId: "f6" },
 ];
 
-const OPENAI_MODELS = [
-  "gpt-4o",
-  "gpt-4o-mini",
-  "gpt-4-turbo",
-  "gpt-3.5-turbo",
-];
-
-const ANTHROPIC_MODELS = [
-  "claude-opus-4-6",
-  "claude-sonnet-4-6",
-  "claude-3-5-sonnet",
-  "claude-haiku-3-5",
-];
+const INPUT_FOCUS_DELAY_MS = 50;
+const TOAST_DURATION_MS = 2500;
 
 // ---------------------------------------------------------------------------
 // APIKeyCard Component
@@ -135,7 +125,7 @@ function APIKeyBottomSheet({
     if (isOpen) {
       setKeyValue("");
       setError(null);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      setTimeout(() => inputRef.current?.focus(), INPUT_FOCUS_DELAY_MS);
     }
   }, [isOpen]);
 
@@ -193,44 +183,44 @@ function APIKeyBottomSheet({
       }}
     >
       <div className="w-full max-w-lg rounded-t-2xl border border-zinc-700 bg-zinc-900 p-6 pb-10">
-        <h2 className="mb-4 text-lg font-semibold text-white">
-          {provider === "openai" ? "OpenAI" : "Anthropic"} API Key{" "}
-          {keyId ? "변경" : "등록"}
-        </h2>
+          <h2 className="mb-4 text-lg font-semibold text-white">
+            {provider === "openai" ? "OpenAI" : "Anthropic"} API Key{" "}
+            {keyId ? "변경" : "등록"}
+          </h2>
 
-        <label className="mb-2 block text-sm font-medium text-zinc-300">
-          API Key
-          <input
-            ref={inputRef}
-            type="password"
-            value={keyValue}
-            onChange={(e) => setKeyValue(e.target.value)}
-            placeholder="sk-..."
-            className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
-          />
-        </label>
+          <label className="mb-2 block text-sm font-medium text-zinc-300">
+            API Key
+            <input
+              ref={inputRef}
+              type="password"
+              value={keyValue}
+              onChange={(e) => setKeyValue(e.target.value)}
+              placeholder="sk-..."
+              className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
+            />
+          </label>
 
-        {error && (
-          <p className="mt-2 text-sm text-red-400">{error}</p>
-        )}
+          {error && (
+            <p className="mt-2 text-sm text-red-400">{error}</p>
+          )}
 
-        <div className="mt-6 flex gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 rounded-lg border border-zinc-600 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800"
-          >
-            취소
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={loading}
-            className="flex-1 rounded-lg bg-emerald-500 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-50"
-          >
-            {loading ? "저장 중..." : "저장"}
-          </button>
-        </div>
+          <div className="mt-6 flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-zinc-600 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={loading}
+              className="flex-1 rounded-lg bg-emerald-500 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-50"
+            >
+              {loading ? "저장 중..." : "저장"}
+            </button>
+          </div>
       </div>
     </div>
   );
@@ -254,6 +244,9 @@ function ModelMappingCard({
   onToast,
 }: ModelMappingCardProps) {
   const configMap = new Map(configs.map((c) => [c.featureType, c]));
+  const [providerOverrides, setProviderOverrides] = useState<
+    Map<string, string>
+  >(new Map());
 
   async function handleModelChange(
     featureType: string,
@@ -273,11 +266,21 @@ function ModelMappingCard({
       onConfigUpdated(data);
       onToast("저장됨");
     } catch {
-      // ignore
+      onToast("저장 실패");
     }
   }
 
+  function handleProviderChange(featureType: string, newProvider: string) {
+    setProviderOverrides((prev) => {
+      const next = new Map(prev);
+      next.set(featureType, newProvider);
+      return next;
+    });
+  }
+
   function getProviderForFeature(featureType: string): string {
+    const override = providerOverrides.get(featureType);
+    if (override) return override;
     const cfg = configMap.get(featureType);
     if (cfg) return cfg.provider;
     // Default to first available provider
@@ -287,7 +290,10 @@ function ModelMappingCard({
   }
 
   function getModelForFeature(featureType: string): string {
+    // If provider was overridden and differs from saved config, reset model
+    const override = providerOverrides.get(featureType);
     const cfg = configMap.get(featureType);
+    if (override && cfg && override !== cfg.provider) return "";
     return cfg?.model ?? "";
   }
 
@@ -312,6 +318,20 @@ function ModelMappingCard({
           return (
             <div key={featureType} className="flex items-center gap-4">
               <span className="w-52 shrink-0 text-sm text-zinc-300">{label}</span>
+              <select
+                data-testid={`provider-select-${selectId}`}
+                value={provider}
+                onChange={(e) =>
+                  handleProviderChange(featureType, e.target.value)
+                }
+                className="w-36 shrink-0 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              >
+                {PROVIDERS.map(({ id, label: providerLabel }) => (
+                  <option key={id} value={id}>
+                    {providerLabel}
+                  </option>
+                ))}
+              </select>
               <select
                 data-testid={`model-select-${selectId}`}
                 name={selectId}
@@ -413,7 +433,7 @@ export default function SettingsLLMPage() {
     }
     toastTimerRef.current = setTimeout(() => {
       setToast(null);
-    }, 2500);
+    }, TOAST_DURATION_MS);
   }
 
   return (

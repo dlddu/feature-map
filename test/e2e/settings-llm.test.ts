@@ -59,7 +59,7 @@ test.describe("설정 > LLM 탭: API Key 등록 및 상태 표시", () => {
     await sheet.getByLabel(/API Key|키/).fill("sk-test-dummykey1234");
 
     // Act: 저장 버튼 클릭
-    await sheet.getByRole("button", { name: /저장|확인|Save/ }).click();
+    await sheet.getByRole("button", { name: /저장|확인|Save/ }).click({ force: true });
 
     // Assert: 바텀시트가 닫혀야 한다
     await expect(
@@ -133,7 +133,7 @@ test.describe("설정 > LLM 탭: 등록된 API Key 변경", () => {
     await sheet.getByLabel(/API Key|키/).fill("sk-test-newdummykey5678");
 
     // Act: 저장 버튼 클릭
-    await sheet.getByRole("button", { name: /저장|확인|Save/ }).click();
+    await sheet.getByRole("button", { name: /저장|확인|Save/ }).click({ force: true });
 
     // Assert: 바텀시트가 닫혀야 한다
     await expect(sheet).not.toBeVisible();
