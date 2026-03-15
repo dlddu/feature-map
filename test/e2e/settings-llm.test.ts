@@ -9,8 +9,7 @@
  *
  * 실행: npx playwright test test/e2e/settings-llm.test.ts
  *
- * NOTE: 모든 테스트는 LLM 설정 페이지(/settings/llm) 미구현으로 skip 상태입니다.
- *       페이지 구현 완료 후 각 테스트의 test.skip() 호출을 제거하세요.
+ * LLM 설정 페이지(/settings/llm) 구현 완료 (DLD-618) — 모든 테스트 활성화됨.
  */
 
 import { test, expect } from "@playwright/test";
@@ -36,8 +35,6 @@ test.describe("설정 > LLM 탭: API Key 등록 및 상태 표시", () => {
   test("OpenAI API Key를 등록하면 APIKeyCard에 '등록됨' 뱃지와 마스킹된 키가 표시된다", async ({
     page,
   }) => {
-    test.skip(true, "LLM 설정 페이지(/settings/llm) 미구현 — 페이지 완성 후 활성화 (DLD-617)");
-
     // Act: LLM 설정 탭으로 이동
     await page.goto("/settings/llm");
 
@@ -101,8 +98,6 @@ test.describe("설정 > LLM 탭: 등록된 API Key 변경", () => {
   test("이미 등록된 OpenAI API Key를 변경하면 마스킹된 키가 갱신된다", async ({
     page,
   }) => {
-    test.skip(true, "LLM 설정 페이지(/settings/llm) 미구현 — 페이지 완성 후 활성화 (DLD-617)");
-
     // Act: LLM 설정 탭으로 이동
     await page.goto("/settings/llm");
 
@@ -163,8 +158,6 @@ test.describe("설정 > LLM 탭: 기능별 모델 변경 및 저장 토스트", 
   test("ModelMappingCard에서 F1(layer extraction) 모델을 변경하면 '저장됨' 토스트가 표시된다", async ({
     page,
   }) => {
-    test.skip(true, "LLM 설정 페이지(/settings/llm) 미구현 — 페이지 완성 후 활성화 (DLD-617)");
-
     // Act: LLM 설정 탭으로 이동
     await page.goto("/settings/llm");
 
