@@ -70,7 +70,7 @@ jobs:
           done
 
       - name: Start Next.js server
-        run: npm run build && npm run start > /tmp/nextjs.log 2>&1 &
+        run: npm run build && npm run start &
         env:
           DATABASE_URL: "file:./e2e-test.db"
           JWT_SECRET: "e2e-test-jwt-secret-local"
@@ -103,10 +103,6 @@ jobs:
           MOCK_LLM_URL: "http://localhost:3102"
           DATABASE_URL: "file:./e2e-test.db"
           JWT_SECRET: "e2e-test-jwt-secret-local"
-
-      - name: Show Next.js server logs
-        if: always()
-        run: cat /tmp/nextjs.log || true
 
       - name: Upload Playwright report
         if: always()

@@ -18,9 +18,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 
-  console.log("[DEBUG /api/auth/github/callback] code:", code);
-  console.log("[DEBUG /api/auth/github/callback] MOCK_GITHUB_API_URL:", MOCK_GITHUB_API_URL || "(not set)");
-
   // code 없으면 에러 리다이렉트
   if (!code) {
     return NextResponse.redirect(
@@ -50,8 +47,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     );
 
-    console.log("[DEBUG /api/auth/github/callback] tokenResponse.ok:", tokenResponse.ok, "status:", tokenResponse.status);
-
     if (!tokenResponse.ok) {
       return NextResponse.redirect(
         new URL("/login?error=github_auth_failed", request.url),
@@ -61,8 +56,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const tokenData = await tokenResponse.json();
     const githubAccessToken = tokenData.access_token;
-
-    console.log("[DEBUG /api/auth/github/callback] tokenData:", JSON.stringify(tokenData));
 
     if (!githubAccessToken) {
       return NextResponse.redirect(
@@ -82,8 +75,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
     });
 
-    console.log("[DEBUG /api/auth/github/callback] userResponse.ok:", userResponse.ok, "status:", userResponse.status);
-
     if (!userResponse.ok) {
       return NextResponse.redirect(
         new URL("/login?error=github_auth_failed", request.url),
@@ -92,7 +83,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     const githubUser: GitHubUser = await userResponse.json();
-    console.log("[DEBUG /api/auth/github/callback] githubUser:", JSON.stringify(githubUser));
 
     // DB에 유저 upsert
     const user = await prisma.user.upsert({
@@ -132,8 +122,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
 
     return response;
-  } catch (error) {
-    console.error("[DEBUG /api/auth/github/callback] catch error:", error);
+  } catch {
     return NextResponse.redirect(
       new URL("/login?error=github_auth_failed", request.url),
       { status: 302 }
