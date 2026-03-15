@@ -177,13 +177,12 @@ function APIKeyBottomSheet({
       aria-modal="true"
       aria-label="API Key 입력"
       data-testid="api-key-bottom-sheet"
-      className="fixed inset-0 z-50"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      {/* Content wrapper — pointer-events-none so it doesn't intercept clicks */}
-      <div className="pointer-events-none relative z-10 flex h-full items-end justify-center">
-        <div className="pointer-events-auto w-full max-w-lg rounded-t-2xl border border-zinc-700 bg-zinc-900 p-6 pb-10">
+      <div className="w-full max-w-lg rounded-t-2xl border border-zinc-700 bg-zinc-900 p-6 pb-10">
           <h2 className="mb-4 text-lg font-semibold text-white">
             {provider === "openai" ? "OpenAI" : "Anthropic"} API Key{" "}
             {keyId ? "변경" : "등록"}
@@ -222,7 +221,6 @@ function APIKeyBottomSheet({
               {loading ? "저장 중..." : "저장"}
             </button>
           </div>
-        </div>
       </div>
     </div>
   );
