@@ -43,13 +43,42 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // 등록된 레포 목록 조회
+  // 등록된 레포 목록 + 파이프라인 + features 함께 조회
   const repos = await prisma.repo.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
+    include: {
+      pipelineRuns: {
+        include: { features: true },
+        orderBy: { startedAt: "desc" },
+      },
+    },
   });
 
-  return NextResponse.json({ repos }, { status: 200 });
+  // 집계 필드 추가
+  const enrichedRepos = repos.map((repo) => {
+    const latestPipeline = repo.pipelineRuns[0] ?? null;
+    const featureCount = repo.pipelineRuns.reduce(
+      (sum, run) => sum + run.features.length,
+      0
+    );
+    return {
+      id: repo.id,
+      githubRepoId: repo.githubRepoId,
+      fullName: repo.fullName,
+      defaultBranch: repo.defaultBranch,
+      installationId: repo.installationId,
+      userId: repo.userId,
+      cloneUrl: repo.cloneUrl,
+      createdAt: repo.createdAt,
+      updatedAt: repo.updatedAt,
+      latestPipelineStatus: latestPipeline?.status ?? null,
+      featureCount,
+      lastAnalyzedAt: latestPipeline?.completedAt ?? null,
+    };
+  });
+
+  return NextResponse.json({ repos: enrichedRepos }, { status: 200 });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {

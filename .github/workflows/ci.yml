@@ -25,7 +25,15 @@ jobs:
         run: npx prisma generate
 
       - name: Run tests
-        run: npm test
+        run: npm test -- --ci --coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
 
       - name: Build
         run: npm run build
