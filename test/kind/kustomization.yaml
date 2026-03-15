@@ -45,3 +45,4 @@ secretGenerator:
       - GITHUB_PRIVATE_KEY=mock-private-key
       - OPENAI_API_KEY=mock-openai-key
       - ANTHROPIC_API_KEY=mock-anthropic-key
+      - ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000001
