@@ -189,12 +189,14 @@ function APIKeyBottomSheet({
       data-testid="api-key-bottom-sheet"
       className="fixed inset-0 z-50 flex items-end justify-center"
     >
-      {/* Backdrop — separated so it doesn't intercept pointer events on content */}
+      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60"
+        aria-hidden="true"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-lg rounded-t-2xl border border-zinc-700 bg-zinc-900 p-6 pb-10">
+      {/* Content panel — z-10 ensures it stacks above the backdrop on all browsers */}
+      <div className="relative z-10 w-full max-w-lg rounded-t-2xl border border-zinc-700 bg-zinc-900 p-6 pb-10">
         <h2 className="mb-4 text-lg font-semibold text-white">
           {provider === "openai" ? "OpenAI" : "Anthropic"} API Key{" "}
           {keyId ? "변경" : "등록"}
