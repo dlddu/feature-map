@@ -5,6 +5,7 @@ import { generateAccessToken, generateRefreshToken } from "@/lib/auth/jwt";
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || "";
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || "";
 const MOCK_GITHUB_API_URL = process.env.MOCK_GITHUB_API_URL || "";
+const BASE_URL = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
 interface GitHubUser {
   id: number;
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // code 없으면 에러 리다이렉트
   if (!code) {
     return NextResponse.redirect(
-      new URL("/login?error=missing_code", request.url),
+      new URL("/login?error=missing_code", BASE_URL),
       { status: 302 }
     );
   }
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (!tokenResponse.ok) {
       return NextResponse.redirect(
-        new URL("/login?error=github_auth_failed", request.url),
+        new URL("/login?error=github_auth_failed", BASE_URL),
         { status: 302 }
       );
     }
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (!githubAccessToken) {
       return NextResponse.redirect(
-        new URL("/login?error=github_auth_failed", request.url),
+        new URL("/login?error=github_auth_failed", BASE_URL),
         { status: 302 }
       );
     }
@@ -86,7 +87,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (!userResponse.ok) {
       return NextResponse.redirect(
-        new URL("/login?error=github_auth_failed", request.url),
+        new URL("/login?error=github_auth_failed", BASE_URL),
         { status: 302 }
       );
     }
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     // /dashboard로 리다이렉트 + 쿠키 설정
     const response = NextResponse.redirect(
-      new URL("/dashboard", request.url),
+      new URL("/dashboard", BASE_URL),
       { status: 302 }
     );
 
@@ -135,7 +136,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     console.error("[DEBUG /api/auth/github/callback] catch error:", error);
     return NextResponse.redirect(
-      new URL("/login?error=github_auth_failed", request.url),
+      new URL("/login?error=github_auth_failed", BASE_URL),
       { status: 302 }
     );
   }
