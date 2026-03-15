@@ -235,7 +235,7 @@ export default function DashboardPage() {
         </div>
 
         {/* 로딩 상태: 스켈레톤 카드 3개 */}
-        {loadState === "loading" && (
+        {(loadState === "idle" || loadState === "loading") && (
           <div className="grid gap-4 sm:grid-cols-2">
             {[1, 2, 3].map((i) => (
               <div
@@ -268,7 +268,7 @@ export default function DashboardPage() {
         )}
 
         {/* 성공 상태: 레포 카드 목록 */}
-        {(loadState === "success" || loadState === "idle") && (
+        {loadState === "success" && (
           <>
             {registeredRepos.length === 0 ? (
               <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
