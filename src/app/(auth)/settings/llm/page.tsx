@@ -48,6 +48,7 @@ const OPENAI_MODELS = [
 const ANTHROPIC_MODELS = [
   "claude-opus-4-6",
   "claude-sonnet-4-6",
+  "claude-3-5-sonnet",
   "claude-haiku-3-5",
 ];
 
@@ -418,7 +419,27 @@ export default function SettingsLLMPage() {
   return (
     <main className="min-h-screen bg-zinc-950 p-8">
       <div className="mx-auto max-w-2xl">
-        <h1 className="mb-8 text-3xl font-bold text-white">설정 - LLM</h1>
+        <h1 className="mb-6 text-3xl font-bold text-white">설정</h1>
+
+        {/* 탭 네비게이션 */}
+        <div role="tablist" className="mb-8 flex gap-1 rounded-xl border border-zinc-800 bg-zinc-900 p-1">
+          <a
+            href="/settings/github"
+            role="tab"
+            aria-selected="false"
+            className="flex-1 rounded-lg px-4 py-2 text-center text-sm font-medium text-zinc-400 hover:text-white"
+          >
+            GitHub
+          </a>
+          <a
+            href="/settings/llm"
+            role="tab"
+            aria-selected="true"
+            className="flex-1 rounded-lg bg-zinc-700 px-4 py-2 text-center text-sm font-medium text-white"
+          >
+            LLM
+          </a>
+        </div>
 
         {/* API Key 관리 카드 */}
         <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900 p-6">

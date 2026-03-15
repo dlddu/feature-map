@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/client";
 import { verifyToken } from "@/lib/auth/jwt";
-import { encrypt, maskApiKey } from "@/lib/crypto/aes";
+import { encrypt, decrypt, maskApiKey } from "@/lib/crypto/aes";
 
 const ALLOWED_PROVIDERS = ["openai", "anthropic"] as const;
 
@@ -12,6 +12,39 @@ function getUserIdFromRequest(request: NextRequest): string {
   }
   const payload = verifyToken(accessToken);
   return payload.userId;
+}
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  // 인증
+  let userId: string;
+  try {
+    userId = getUserIdFromRequest(request);
+  } catch {
+    return NextResponse.json(
+      { error: "인증이 필요합니다" },
+      { status: 401 }
+    );
+  }
+
+  // DB에서 API 키 목록 조회
+  const keys = await prisma.aPIKey.findMany({
+    where: { userId },
+  });
+
+  // 각 키 복호화 후 마스킹
+  const apiKeys = keys.map((k) => {
+    const decryptedKey = decrypt(k.encryptedKey);
+    const maskedKey = maskApiKey(decryptedKey);
+    return {
+      id: k.id,
+      provider: k.provider,
+      maskedKey,
+      label: k.label,
+      isActive: k.isActive,
+    };
+  });
+
+  return NextResponse.json({ apiKeys });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
