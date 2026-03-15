@@ -3,6 +3,8 @@
  *
  * 지원 엔드포인트:
  * - GET /health
+ * - POST /login/oauth/access_token - OAuth 토큰 교환
+ * - GET /api/v3/user - OAuth 유저 정보 조회
  * - GET /api/v3/installation/repositories - 레포 목록
  * - GET /api/v3/repos/:owner/:repo/git/trees/:sha - 파일 트리
  * - GET /api/v3/repos/:owner/:repo/git/blobs/:sha - 파일 내용
@@ -45,6 +47,26 @@ const server = createServer((req, res) => {
   // Health check
   if (req.method === "GET" && pathname === "/health") {
     return send(res, 200, { status: "ok", server: "mock-github" });
+  }
+
+  // OAuth access_token 교환
+  if (req.method === "POST" && pathname === "/login/oauth/access_token") {
+    return send(res, 200, {
+      access_token: "mock-github-oauth-token",
+      token_type: "bearer",
+      scope: "read:user,user:email",
+    });
+  }
+
+  // OAuth 유저 정보 조회
+  if (req.method === "GET" && pathname === "/api/v3/user") {
+    return send(res, 200, {
+      id: 99999,
+      login: "e2e-github-user",
+      name: "E2E GitHub User",
+      email: "e2e-github@example.com",
+      avatar_url: "https://avatars.githubusercontent.com/u/99999",
+    });
   }
 
   // Installation access token (GitHub App 인증용)
