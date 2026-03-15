@@ -215,7 +215,7 @@ describe("AES-256-GCM 암호화 유틸리티", () => {
 
       // Assert
       expect(masked).toMatch(/^sk-\.\.\./);
-      expect(masked).toEndWith("jkl0");
+      expect(masked.endsWith("jkl0")).toBe(true);
     });
 
     it("마스킹 형식이 'sk-...XXXX' 패턴을 따른다", () => {
@@ -260,7 +260,7 @@ describe("AES-256-GCM 암호화 유틸리티", () => {
       const masked = maskApiKey(apiKey);
 
       // Assert
-      expect(masked).toEndWith("7x3f");
+      expect(masked.endsWith("7x3f")).toBe(true);
     });
 
     it("마스킹 결과에 원래 키의 중간 부분이 포함되지 않는다", () => {
