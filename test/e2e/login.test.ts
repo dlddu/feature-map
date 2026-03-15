@@ -86,9 +86,26 @@ test.describe("로그인: GitHub OAuth 로그인 플로우", () => {
   test("GitHub 로그인 버튼 클릭 후 OAuth 콜백이 완료되면 대시보드로 리다이렉트된다", async ({
     page,
   }) => {
+    // Debug: 네비게이션 이벤트 로깅
+    page.on("response", (response) => {
+      const status = response.status();
+      const url = response.url();
+      if (url.includes("github") || url.includes("callback") || url.includes("dashboard") || url.includes("login") || status >= 300) {
+        console.log(`[DEBUG E2E] Response: ${status} ${url}`);
+      }
+    });
+    page.on("requestfailed", (request) => {
+      console.log(`[DEBUG E2E] Request FAILED: ${request.url()} - ${request.failure()?.errorText}`);
+    });
+
     // Act: 로그인 페이지 진입 후 GitHub 로그인 버튼 클릭
     await page.goto("/login");
+    console.log("[DEBUG E2E] Current URL before click:", page.url());
     await page.getByRole("button", { name: /GitHub로 로그인|GitHub/ }).click();
+
+    // Debug: 잠시 대기 후 현재 URL 확인
+    await page.waitForTimeout(3000);
+    console.log("[DEBUG E2E] Current URL after click:", page.url());
 
     // Assert: 대시보드로 리다이렉트되어야 한다
     await expect(page).toHaveURL(/\/dashboard/);
