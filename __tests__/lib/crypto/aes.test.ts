@@ -20,7 +20,18 @@ import { encrypt, decrypt, maskApiKey } from "@/lib/crypto/aes";
 // Tests
 // ---------------------------------------------------------------------------
 
+// Set ENCRYPTION_KEY for tests (32 bytes = 64 hex chars)
+const TEST_ENCRYPTION_KEY =
+  "0000000000000000000000000000000000000000000000000000000000000001";
+
 describe("AES-256-GCM 암호화 유틸리티", () => {
+  beforeAll(() => {
+    process.env.ENCRYPTION_KEY = TEST_ENCRYPTION_KEY;
+  });
+
+  afterAll(() => {
+    delete process.env.ENCRYPTION_KEY;
+  });
   // -------------------------------------------------------------------------
   // encrypt
   // -------------------------------------------------------------------------

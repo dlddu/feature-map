@@ -32,18 +32,30 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     orderBy: { createdAt: "asc" },
   });
 
-  // 각 키 복호화 후 마스킹
-  const apiKeys = keys.map((k) => {
-    const decryptedKey = decrypt(k.encryptedKey);
-    const maskedKey = maskApiKey(decryptedKey);
-    return {
-      id: k.id,
-      provider: k.provider,
-      maskedKey,
-      label: k.label,
-      isActive: k.isActive,
-    };
-  });
+  // 각 키 복호화 후 마스킹 (복호화 실패 시 해당 키 건너뜀)
+  const apiKeys: Array<{
+    id: string;
+    provider: string;
+    maskedKey: string;
+    label: string | null;
+    isActive: boolean;
+  }> = [];
+
+  for (const k of keys) {
+    try {
+      const decryptedKey = decrypt(k.encryptedKey);
+      const maskedKey = maskApiKey(decryptedKey);
+      apiKeys.push({
+        id: k.id,
+        provider: k.provider,
+        maskedKey,
+        label: k.label,
+        isActive: k.isActive,
+      });
+    } catch {
+      // Skip keys that fail to decrypt (e.g. corrupted data or changed ENCRYPTION_KEY)
+    }
+  }
 
   return NextResponse.json({ apiKeys });
 }

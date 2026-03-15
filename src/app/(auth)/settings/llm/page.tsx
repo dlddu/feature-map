@@ -273,7 +273,7 @@ function ModelMappingCard({
       onConfigUpdated(data);
       onToast("저장됨");
     } catch {
-      // ignore
+      onToast("저장에 실패했습니다");
     }
   }
 
