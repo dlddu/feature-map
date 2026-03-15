@@ -220,8 +220,12 @@ test.describe("대시보드: 레포 없을 때 빈 상태 + CTA 표시", () => {
     // Arrange: e2e-test-user-003은 레포 없이 시딩된 유저
     //          seed.ts에 해당 유저 추가 필요 (레포 연결 없음)
 
-    // Act: 대시보드 진입
+    // Act: 대시보드 진입 + API 응답 대기
     await page.goto("/dashboard");
+    await page.waitForResponse(
+      (resp) => resp.url().includes("/api/repos") && resp.status() === 200,
+      { timeout: 15000 }
+    );
 
     // Assert: 빈 상태 안내 문구가 표시되어야 한다
     await expect(
@@ -234,8 +238,12 @@ test.describe("대시보드: 레포 없을 때 빈 상태 + CTA 표시", () => {
   }) => {
     // Arrange: e2e-test-user-003은 레포 없이 시딩된 유저
 
-    // Act: 대시보드 진입
+    // Act: 대시보드 진입 + API 응답 대기
     await page.goto("/dashboard");
+    await page.waitForResponse(
+      (resp) => resp.url().includes("/api/repos") && resp.status() === 200,
+      { timeout: 15000 }
+    );
 
     // Assert: "+ 레포 연결" CTA 버튼이 표시되어야 한다
     await expect(
@@ -248,8 +256,12 @@ test.describe("대시보드: 레포 없을 때 빈 상태 + CTA 표시", () => {
   }) => {
     // Arrange: e2e-test-user-003은 레포 없이 시딩된 유저
 
-    // Act: 대시보드 진입
+    // Act: 대시보드 진입 + API 응답 대기
     await page.goto("/dashboard");
+    await page.waitForResponse(
+      (resp) => resp.url().includes("/api/repos") && resp.status() === 200,
+      { timeout: 15000 }
+    );
 
     // Assert: 빈 상태임을 확인
     await expect(
