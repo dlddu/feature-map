@@ -179,10 +179,10 @@ function APIKeyBottomSheet({
       data-testid="api-key-bottom-sheet"
       className="fixed inset-0 z-50"
     >
-      {/* Backdrop — sibling so it cannot intercept content pointer events */}
+      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      {/* Content panel */}
-      <div className="absolute inset-x-0 bottom-0 flex justify-center">
+      {/* Content panel — z-10 ensures it's above the backdrop for mobile hit-testing */}
+      <div className="relative z-10 flex h-full items-end justify-center">
         <div className="w-full max-w-lg rounded-t-2xl border border-zinc-700 bg-zinc-900 p-6 pb-10">
           <h2 className="mb-4 text-lg font-semibold text-white">
             {provider === "openai" ? "OpenAI" : "Anthropic"} API Key{" "}
