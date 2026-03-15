@@ -177,49 +177,51 @@ function APIKeyBottomSheet({
       aria-modal="true"
       aria-label="API Key 입력"
       data-testid="api-key-bottom-sheet"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      className="fixed inset-0 z-50"
     >
-      <div className="w-full max-w-lg rounded-t-2xl border border-zinc-700 bg-zinc-900 p-6 pb-10">
-        <h2 className="mb-4 text-lg font-semibold text-white">
-          {provider === "openai" ? "OpenAI" : "Anthropic"} API Key{" "}
-          {keyId ? "변경" : "등록"}
-        </h2>
+      {/* Backdrop — sibling so it cannot intercept content pointer events */}
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      {/* Content panel */}
+      <div className="absolute inset-x-0 bottom-0 flex justify-center">
+        <div className="w-full max-w-lg rounded-t-2xl border border-zinc-700 bg-zinc-900 p-6 pb-10">
+          <h2 className="mb-4 text-lg font-semibold text-white">
+            {provider === "openai" ? "OpenAI" : "Anthropic"} API Key{" "}
+            {keyId ? "변경" : "등록"}
+          </h2>
 
-        <label className="mb-2 block text-sm font-medium text-zinc-300">
-          API Key
-          <input
-            ref={inputRef}
-            type="password"
-            value={keyValue}
-            onChange={(e) => setKeyValue(e.target.value)}
-            placeholder="sk-..."
-            className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
-          />
-        </label>
+          <label className="mb-2 block text-sm font-medium text-zinc-300">
+            API Key
+            <input
+              ref={inputRef}
+              type="password"
+              value={keyValue}
+              onChange={(e) => setKeyValue(e.target.value)}
+              placeholder="sk-..."
+              className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
+            />
+          </label>
 
-        {error && (
-          <p className="mt-2 text-sm text-red-400">{error}</p>
-        )}
+          {error && (
+            <p className="mt-2 text-sm text-red-400">{error}</p>
+          )}
 
-        <div className="mt-6 flex gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 rounded-lg border border-zinc-600 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800"
-          >
-            취소
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={loading}
-            className="flex-1 rounded-lg bg-emerald-500 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-50"
-          >
-            {loading ? "저장 중..." : "저장"}
-          </button>
+          <div className="mt-6 flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-zinc-600 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={loading}
+              className="flex-1 rounded-lg bg-emerald-500 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-50"
+            >
+              {loading ? "저장 중..." : "저장"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
