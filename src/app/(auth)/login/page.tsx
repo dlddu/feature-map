@@ -41,7 +41,7 @@ export default function LoginPage() {
   }
 
   function handleGitHubLogin() {
-    window.location.href = "/api/auth/github/callback";
+    window.location.href = "/api/auth/github";
   }
 
   return (
