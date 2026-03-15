@@ -105,6 +105,22 @@ export async function seedDatabase(): Promise<SeedResult> {
     },
   });
 
+  // 레포가 연결되지 않은 유저 시딩 (DLD-619)
+  // dashboard.test.ts의 "레포 없을 때 빈 상태 + CTA 표시" 케이스에서 사용
+  await prisma.user.create({
+    data: {
+      id: "e2e-test-user-003",
+      githubId: 9000003,
+      login: "no-repo-user",
+      name: "No Repo User",
+      avatarUrl: "https://avatars.githubusercontent.com/u/9000003?v=4",
+      accessToken: "seed-access-token-placeholder-003",
+      refreshToken: "seed-refresh-token-placeholder-003",
+      installationId: 12345,
+      // 레포 없음 — 빈 상태 대시보드 시나리오 전용
+    },
+  });
+
   const repo = await prisma.repo.create({
     data: {
       id: "e2e-test-repo-001",
