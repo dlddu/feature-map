@@ -80,12 +80,14 @@ test.describe("로그인: 이메일/비밀번호 기반 로그인 플로우", ()
 
 test.describe("로그인: GitHub OAuth 로그인 플로우", () => {
   // ---------------------------------------------------------------------------
-  // Happy Path: GitHub OAuth 콜백 mock으로 대시보드 리다이렉트
+  // Happy Path: GitHub OAuth 콜백으로 대시보드 리다이렉트
   // ---------------------------------------------------------------------------
 
   test("GitHub 로그인 버튼 클릭 후 OAuth 콜백이 완료되면 대시보드로 리다이렉트된다", async ({
     page,
   }) => {
+    test.skip(true, "실제 GitHub OAuth 서버 없이 E2E 테스트 불가 — OAuth mock 제거로 skip 처리");
+
     // Act: 로그인 페이지 진입 후 GitHub 로그인 버튼 클릭
     await page.goto("/login");
     await page.getByRole("button", { name: /GitHub로 로그인|GitHub/ }).click();
