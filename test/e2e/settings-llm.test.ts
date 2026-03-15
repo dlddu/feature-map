@@ -45,7 +45,7 @@ test.describe("설정 > LLM 탭: API Key 등록 및 상태 표시", () => {
     const openAIRow = page.locator("[data-testid='provider-row-openai']").or(
       page.getByText("OpenAI").locator("..")
     );
-    await openAIRow.getByRole("button", { name: /등록|추가/ }).click();
+    await openAIRow.getByRole("button", { name: /등록|추가|변경/ }).click();
 
     // Assert: API Key 입력 바텀시트가 열려야 한다
     await expect(
@@ -181,7 +181,7 @@ test.describe("설정 > LLM 탭: 기능별 모델 변경 및 저장 토스트", 
     const f1Select = page.locator("[data-testid='model-select-f1']").or(
       page.locator("select[name='f1'], select[aria-label*='f1'], select[aria-label*='layer extraction']")
     );
-    await f1Select.selectOption({ label: /claude-3-5-sonnet|Claude 3\.5 Sonnet/ });
+    await f1Select.selectOption({ value: "gpt-4o-mini" });
 
     // Assert: "저장됨" 토스트가 표시되어야 한다 (즉시 저장 + 토스트)
     // 토스트는 자동 소멸하므로 충분한 timeout 안에 visible 확인
