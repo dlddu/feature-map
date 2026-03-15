@@ -255,6 +255,11 @@ function ModelMappingCard({
 }: ModelMappingCardProps) {
   const configMap = new Map(configs.map((c) => [c.featureType, c]));
 
+  // Local provider overrides — tracks user's provider selection before a model is saved
+  const [providerOverrides, setProviderOverrides] = useState<
+    Map<string, string>
+  >(new Map());
+
   async function handleModelChange(
     featureType: string,
     provider: string,
@@ -271,22 +276,42 @@ function ModelMappingCard({
 
       const data: LLMConfig = await res.json();
       onConfigUpdated(data);
+      // Clear local override once the config is persisted
+      setProviderOverrides((prev) => {
+        const next = new Map(prev);
+        next.delete(featureType);
+        return next;
+      });
       onToast("저장됨");
     } catch {
       onToast("저장에 실패했습니다");
     }
   }
 
+  function handleProviderChange(featureType: string, newProvider: string) {
+    setProviderOverrides((prev) => {
+      const next = new Map(prev);
+      next.set(featureType, newProvider);
+      return next;
+    });
+  }
+
   function getProviderForFeature(featureType: string): string {
+    // 1. Local override (user just switched the provider select)
+    const override = providerOverrides.get(featureType);
+    if (override) return override;
+    // 2. Saved config
     const cfg = configMap.get(featureType);
     if (cfg) return cfg.provider;
-    // Default to first available provider
+    // 3. Default to first available provider
     if (apiKeys.has("openai")) return "openai";
     if (apiKeys.has("anthropic")) return "anthropic";
     return "openai";
   }
 
   function getModelForFeature(featureType: string): string {
+    // If provider was locally overridden (not yet saved), reset model selection
+    if (providerOverrides.has(featureType)) return "";
     const cfg = configMap.get(featureType);
     return cfg?.model ?? "";
   }
@@ -312,6 +337,21 @@ function ModelMappingCard({
           return (
             <div key={featureType} className="flex items-center gap-4">
               <span className="w-52 shrink-0 text-sm text-zinc-300">{label}</span>
+              <select
+                data-testid={`provider-select-${selectId}`}
+                aria-label={`${label} provider`}
+                value={provider}
+                onChange={(e) =>
+                  handleProviderChange(featureType, e.target.value)
+                }
+                className="w-36 shrink-0 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              >
+                {PROVIDERS.map(({ id, label: providerLabel }) => (
+                  <option key={id} value={id}>
+                    {providerLabel}
+                  </option>
+                ))}
+              </select>
               <select
                 data-testid={`model-select-${selectId}`}
                 name={selectId}
