@@ -85,10 +85,18 @@ test.describe("설정 > LLM 탭: API Key 등록 및 상태 표시", () => {
 test.describe("설정 > LLM 탭: 등록된 API Key 변경", () => {
   const baseUrl = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 
-  test.beforeEach(async ({ context }) => {
+  test.beforeEach(async ({ context, page }) => {
     // Arrange: 시드 유저(e2e-test-user-001)의 인증 쿠키 설정
     const cookies = createAuthCookies("e2e-test-user-001", baseUrl);
     await context.addCookies(cookies);
+
+    // Arrange: OpenAI API Key 등록 (sk-...7x3f 마스킹을 위해 마지막 4자가 "7x3f"인 키 사용)
+    await page.request.post(`${baseUrl}/api/settings/api-keys`, {
+      data: {
+        provider: "openai",
+        key: "sk-test-existing-key-content-7x3f",
+      },
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -130,8 +138,8 @@ test.describe("설정 > LLM 탭: 등록된 API Key 변경", () => {
     // Assert: 바텀시트가 닫혀야 한다
     await expect(sheet).not.toBeVisible();
 
-    // Assert: 마스킹 키가 갱신된 값(sk-...9z2k)으로 변경되어야 한다
-    await expect(openAIRow.getByText("sk-...9z2k")).toBeVisible();
+    // Assert: 마스킹 키가 갱신된 값(sk-...5678)으로 변경되어야 한다
+    await expect(openAIRow.getByText("sk-...5678")).toBeVisible();
 
     // Assert: 기존 마스킹 키(sk-...7x3f)는 더 이상 표시되지 않아야 한다
     await expect(openAIRow.getByText("sk-...7x3f")).not.toBeVisible();

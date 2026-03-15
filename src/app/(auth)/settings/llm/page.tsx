@@ -301,7 +301,7 @@ function ModelMappingCard({
       data-testid="model-mapping-card"
       className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6"
     >
-      <h2 className="mb-5 text-xl font-semibold text-white">기능별 모델 설정</h2>
+      <h2 className="mb-5 text-xl font-semibold text-white">모델 설정</h2>
 
       <div className="space-y-4">
         {FEATURE_TYPES.map(({ id: featureType, label, selectId }) => {

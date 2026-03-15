@@ -29,6 +29,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // DB에서 API 키 목록 조회
   const keys = await prisma.aPIKey.findMany({
     where: { userId },
+    orderBy: { createdAt: "asc" },
   });
 
   // 각 키 복호화 후 마스킹

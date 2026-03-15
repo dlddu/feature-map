@@ -15,7 +15,6 @@
 
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
-import { encrypt } from "../../src/lib/crypto/aes";
 
 const prisma = new PrismaClient({
   datasources: {
@@ -103,20 +102,6 @@ export async function seedDatabase(): Promise<SeedResult> {
       passwordHash: bcrypt.hashSync("Password123!", 10),
       name: "Fresh User",
       // installationId 없음 — GitHub App 미설치 상태
-    },
-  });
-
-  // LLM 설정 E2E 테스트용 API Key 시드 (DLD-618)
-  // settings-llm.test.ts의 "API Key 변경" 테스트에서 사용
-  // 마스킹 결과: sk-...7x3f (마지막 4자 = "7x3f")
-  await prisma.aPIKey.create({
-    data: {
-      id: "e2e-test-apikey-001",
-      userId: user.id,
-      provider: "openai",
-      encryptedKey: encrypt("sk-test-existing-key-content-7x3f"),
-      label: "E2E Test OpenAI Key",
-      isActive: true,
     },
   });
 
