@@ -122,7 +122,7 @@ function PipelineCard({
     >
       {/* 헤더 */}
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-white">파이프라인</h2>
+        <h2 className="text-xl font-semibold text-white">실행 단계</h2>
         <div className="flex gap-2">
           {isRunning ? (
             <button
@@ -147,13 +147,12 @@ function PipelineCard({
       {/* 선행 단계 경고 메시지 */}
       {prerequisiteWarning && (
         <div
-          data-testid="prerequisite-warning"
           role="alert"
           className="mb-4 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4"
         >
           <span className="text-amber-400">⚠</span>
           <div className="flex-1">
-            <p className="text-sm text-amber-300">{prerequisiteWarning}</p>
+            <p data-testid="prerequisite-warning" className="text-sm text-amber-300">{prerequisiteWarning}</p>
           </div>
           <button
             type="button"
@@ -294,6 +293,7 @@ function SectionTabs({ activeTab, onChangeTab }: SectionTabsProps) {
             data-testid={tab.testId}
             aria-selected={isActive}
             aria-controls={`${tab.id}-panel`}
+            aria-label={tab.label}
             onClick={() => onChangeTab(tab.id)}
             className={[
               "min-h-[44px] px-5 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-zinc-500",
@@ -302,7 +302,7 @@ function SectionTabs({ activeTab, onChangeTab }: SectionTabsProps) {
                 : "text-zinc-400 hover:text-zinc-200",
             ].join(" ")}
           >
-            {tab.label}
+            <span aria-hidden="true">{tab.label}</span>
           </button>
         );
       })}
@@ -347,6 +347,7 @@ function OverviewPanel({
       aria-labelledby="section-tab-overview"
       className="space-y-6 pt-6"
     >
+      <h2 className="text-lg font-semibold text-zinc-300">개요</h2>
       <PipelineCard
         repoId={repo.id}
         steps={steps}
@@ -735,9 +736,9 @@ export default function RepoOverviewPage() {
           <>
             {/* 레포명 헤더 */}
             <div className="mb-6">
-              <p className="font-mono text-2xl font-bold text-white">
+              <h1 className="font-mono text-2xl font-bold text-white">
                 {repo.fullName}
-              </p>
+              </h1>
               <p className="mt-1 text-sm text-zinc-400">
                 브랜치: {repo.defaultBranch}
               </p>
