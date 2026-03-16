@@ -43,6 +43,9 @@ test.describe("대시보드: 연결된 레포 카드 목록 표시", () => {
       page.getByRole("heading", { name: "연결된 레포지토리" })
     ).toBeVisible();
 
+    // Wait: 로딩 스켈레톤이 사라질 때까지 대기 (KIND 클러스터 호환)
+    await expect(page.locator("[data-testid='skeleton-card']").first()).toBeHidden({ timeout: 30000 });
+
     // Assert: 시드 데이터의 레포 카드(test-org/sample-app)가 표시되어야 한다
     await expect(page.getByText("test-org/sample-app")).toBeVisible();
 
@@ -57,6 +60,9 @@ test.describe("대시보드: 연결된 레포 카드 목록 표시", () => {
 
     // Act: 대시보드 진입
     await page.goto("/dashboard");
+
+    // Wait: 로딩 스켈레톤이 사라질 때까지 대기 (KIND 클러스터 호환)
+    await expect(page.locator("[data-testid='skeleton-card']").first()).toBeHidden({ timeout: 30000 });
 
     // Assert: 레포 카드에 fullName이 표시되어야 한다
     await expect(page.getByText("test-org/sample-app")).toBeVisible();
@@ -105,6 +111,9 @@ test.describe("대시보드: 레포 카드 상세 정보 표시", () => {
     // Act: 대시보드 진입
     await page.goto("/dashboard");
 
+    // Wait: 로딩 스켈레톤이 사라질 때까지 대기 (KIND 클러스터 호환)
+    await expect(page.locator("[data-testid='skeleton-card']").first()).toBeHidden({ timeout: 30000 });
+
     // Assert: 레포 카드에 feature 수가 표시되어야 한다
     // (예: "3 features", "0 features" 등)
     const repoCard = page.locator("[data-testid='repo-card']", {
@@ -123,6 +132,9 @@ test.describe("대시보드: 레포 카드 상세 정보 표시", () => {
     // Act: 대시보드 진입
     await page.goto("/dashboard");
 
+    // Wait: 로딩 스켈레톤이 사라질 때까지 대기 (KIND 클러스터 호환)
+    await expect(page.locator("[data-testid='skeleton-card']").first()).toBeHidden({ timeout: 30000 });
+
     // Assert: 레포 카드에 분석 상태 뱃지가 표시되어야 한다
     const repoCard = page.locator("[data-testid='repo-card']", {
       has: page.getByText("test-org/sample-app"),
@@ -138,6 +150,9 @@ test.describe("대시보드: 레포 카드 상세 정보 표시", () => {
 
     // Act: 대시보드 진입
     await page.goto("/dashboard");
+
+    // Wait: 로딩 스켈레톤이 사라질 때까지 대기 (KIND 클러스터 호환)
+    await expect(page.locator("[data-testid='skeleton-card']").first()).toBeHidden({ timeout: 30000 });
 
     // Assert: 레포 카드에 마지막 분석 시각 또는 미분석 안내 텍스트가 표시되어야 한다
     const repoCard = page.locator("[data-testid='repo-card']", {
@@ -169,6 +184,9 @@ test.describe("대시보드: 레포 카드 클릭 → 레포 상세 이동", () 
 
     // Act: 대시보드 진입
     await page.goto("/dashboard");
+
+    // Wait: 로딩 스켈레톤이 사라질 때까지 대기 (KIND 클러스터 호환)
+    await expect(page.locator("[data-testid='skeleton-card']").first()).toBeHidden({ timeout: 30000 });
 
     // Assert: 레포 카드가 표시될 때까지 대기
     await expect(page.getByText("test-org/sample-app")).toBeVisible();
@@ -220,12 +238,9 @@ test.describe("대시보드: 레포 없을 때 빈 상태 + CTA 표시", () => {
     // Arrange: e2e-test-user-003은 레포 없이 시딩된 유저
     //          seed.ts에 해당 유저 추가 필요 (레포 연결 없음)
 
-    // Act: 대시보드 진입 + API 응답 대기
+    // Act: 대시보드 진입 + 로딩 완료 대기 (DOM 기반)
     await page.goto("/dashboard");
-    await page.waitForResponse(
-      (resp) => resp.url().includes("/api/repos") && resp.status() === 200,
-      { timeout: 15000 }
-    );
+    await expect(page.locator("[data-testid='skeleton-card']").first()).toBeHidden({ timeout: 30000 });
 
     // Assert: 빈 상태 안내 문구가 표시되어야 한다
     await expect(
@@ -238,12 +253,9 @@ test.describe("대시보드: 레포 없을 때 빈 상태 + CTA 표시", () => {
   }) => {
     // Arrange: e2e-test-user-003은 레포 없이 시딩된 유저
 
-    // Act: 대시보드 진입 + API 응답 대기
+    // Act: 대시보드 진입 + 로딩 완료 대기 (DOM 기반)
     await page.goto("/dashboard");
-    await page.waitForResponse(
-      (resp) => resp.url().includes("/api/repos") && resp.status() === 200,
-      { timeout: 15000 }
-    );
+    await expect(page.locator("[data-testid='skeleton-card']").first()).toBeHidden({ timeout: 30000 });
 
     // Assert: "+ 레포 연결" CTA 버튼이 표시되어야 한다
     await expect(
@@ -256,12 +268,9 @@ test.describe("대시보드: 레포 없을 때 빈 상태 + CTA 표시", () => {
   }) => {
     // Arrange: e2e-test-user-003은 레포 없이 시딩된 유저
 
-    // Act: 대시보드 진입 + API 응답 대기
+    // Act: 대시보드 진입 + 로딩 완료 대기 (DOM 기반)
     await page.goto("/dashboard");
-    await page.waitForResponse(
-      (resp) => resp.url().includes("/api/repos") && resp.status() === 200,
-      { timeout: 15000 }
-    );
+    await expect(page.locator("[data-testid='skeleton-card']").first()).toBeHidden({ timeout: 30000 });
 
     // Assert: 빈 상태임을 확인
     await expect(
