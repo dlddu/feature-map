@@ -48,6 +48,20 @@ async function seed() {
     },
   });
 
+  // 레포가 연결되지 않은 유저 시딩 (DLD-619)
+  await prisma.user.create({
+    data: {
+      id: "e2e-test-user-003",
+      githubId: 9000003,
+      login: "no-repo-user",
+      name: "No Repo User",
+      avatarUrl: "https://avatars.githubusercontent.com/u/9000003?v=4",
+      accessToken: "seed-access-token-placeholder-003",
+      refreshToken: "seed-refresh-token-placeholder-003",
+      installationId: 12345,
+    },
+  });
+
   // 시드 레포
   await prisma.repo.create({
     data: {
