@@ -294,8 +294,10 @@ describe("PipelineEngine", () => {
       MockLLMGateway.mockImplementation(() => mockGateway as unknown as LLMGateway);
       engine = new PipelineEngine();
 
-      // Act
-      await engine.runStep(MOCK_RUN_ID, "F1");
+      // Act — runStep은 에러를 re-throw하므로 catch하여 처리
+      await engine.runStep(MOCK_RUN_ID, "F1").catch(() => {
+        // 파싱 실패로 인한 에러는 예상된 동작
+      });
 
       // Assert
       expect(mockPrismaRun.update).toHaveBeenCalledWith(
