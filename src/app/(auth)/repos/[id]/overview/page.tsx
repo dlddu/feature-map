@@ -598,6 +598,7 @@ export default function RepoOverviewPage() {
             {/* Overview Panel */}
             {activeTab === "overview" && (
               <div data-testid="overview-panel" role="tabpanel">
+                <h2 className="text-lg font-semibold text-white mb-6">개요</h2>
                 <div className="space-y-6">
                   {/* PipelineCard */}
                   <PipelineCard
