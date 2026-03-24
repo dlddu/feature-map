@@ -124,7 +124,10 @@ function StepIndicator({
   };
 
   return (
-    <div className="flex flex-col items-center">
+    <div
+      data-testid={`pipeline-step-${step.toLowerCase()}`}
+      className="flex flex-col items-center"
+    >
       <div className="flex items-center w-full">
         {/* 원형 아이콘 */}
         <div
@@ -290,7 +293,7 @@ function QuickStatsGrid({
       className="grid grid-cols-3 gap-4"
     >
       <button
-        data-testid="stat-layers"
+        data-testid="quick-stats-card-layers"
         onClick={() => onTabChange("layers")}
         className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-left hover:border-zinc-700 transition-colors"
       >
@@ -299,7 +302,7 @@ function QuickStatsGrid({
       </button>
 
       <button
-        data-testid="stat-strategies"
+        data-testid="quick-stats-card-strategies"
         onClick={() => onTabChange("strategy")}
         className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-left hover:border-zinc-700 transition-colors"
       >
@@ -308,7 +311,7 @@ function QuickStatsGrid({
       </button>
 
       <button
-        data-testid="stat-features"
+        data-testid="quick-stats-card-features"
         onClick={() => onTabChange("features")}
         className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-left hover:border-zinc-700 transition-colors"
       >
@@ -330,10 +333,10 @@ interface SectionTabsProps {
 
 function SectionTabs({ activeTab, onTabChange }: SectionTabsProps) {
   const tabs: { id: SectionTab; label: string; testId: string }[] = [
-    { id: "overview", label: "개요", testId: "tab-overview" },
-    { id: "layers", label: "계층", testId: "tab-layers" },
-    { id: "strategy", label: "전략", testId: "tab-strategy" },
-    { id: "features", label: "Features", testId: "tab-features" },
+    { id: "overview", label: "개요", testId: "section-tab-overview" },
+    { id: "layers", label: "계층", testId: "section-tab-layers" },
+    { id: "strategy", label: "전략", testId: "section-tab-strategy" },
+    { id: "features", label: "Features", testId: "section-tab-features" },
   ];
 
   return (
@@ -491,6 +494,10 @@ export default function RepoOverviewPage() {
         method: "POST",
       });
       setIsRunning(false);
+      // Mark running steps as FAILED
+      setStepStates((prev) =>
+        prev.map((s) => (s.status === "RUNNING" ? { ...s, status: "FAILED" } : s))
+      );
     } catch {
       // 오류 처리
     }
